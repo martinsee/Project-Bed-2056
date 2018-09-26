@@ -2,11 +2,22 @@
 #dplyr::do (summarise med flere verdier), lager liste, må bruke unnest() for å åpne lista. 
 
 install.packages("gtrendsR")
+install.packages("PxWebApiData")
 library(gtrendsR)
+library(PxWebApiData)
 library(tidyr)
+library(dplyr)
+library(lubridate)
 
 getwd()
-bitcoin_data <- read.csv("R/data/multiTimeline.csv")
+bitcoin_data <- read.csv("data/bitcoinprice.csv")
+summary(bitcoin_data)
+names(bitcoin_data)
+head(bitcoin_data)
+
+bitcoin_price <- bitcoin_data[,c(4,9)]
+str(bitcoin_price)
+bitcoin_price$date <- ymd(bitcoin_price$date)
 
 bitcoin_trends <- gtrends(keyword = "bitcoin", geo = "", time = "today+5-y",
         gprop = c("web", "news", "images", "froogle", "youtube"),
