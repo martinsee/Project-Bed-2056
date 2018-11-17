@@ -1,9 +1,8 @@
 library(readxl)
 library(ggplot2)
 library(tidyverse)
-library(anytime)
-library(stringr)
 library(mosaic)
+library(lubridate)
 
 #Hente kursdata for equinor
 eqnr <- read_csv("https://www.netfonds.no/quotes/paperhistory.php?paper=EQNR.OSE&csv_format=csv",
@@ -16,13 +15,12 @@ eqnr <- eqnr %>%
 
 #Henter kursdata for hovedindeksen OSEBX
 osebx <- read_excel("data/osebx.xlsx")
-names(osebx)
 
 osebx <- osebx %>%
   rename(Dato = "OSEBX", OSEBX = "Siste") %>%
   select(Dato, OSEBX)
 
-osebx$Dato <- anydate(osebx$Dato)
+osebx$Dato <- ymd(osebx$Dato)
 
 #Henter prisdata for bitcoin i USD
 bitcoin <- read.csv("data/BTC_USD Bitfinex Historical Data.csv")
@@ -32,7 +30,7 @@ bitcoin <- bitcoin %>%
   select(ï..Date, Price, Change..) %>%
   rename(Dato = "ï..Date", btc_usd = "Price", btc_change = "Change..")
 
-bitcoin$Dato <- anydate(bitcoin$Dato)
+bitcoin$Dato <- mdy(bitcoin$Dato)
 bitcoin$btc_usd <- as.numeric(bitcoin$btc_usd)
 
 head(bitcoin) #tidligste dato er 2. feb 2012 
@@ -42,7 +40,7 @@ tail(bitcoin)
 gull <- read.csv("data/monthly_csv.csv")
 str(gull)
 
-gull$Date <- anydate(gull$Date)
+gull$Date <- parse_date_time(gull$Date, orders = "Ym")
 gull <- gull %>% 
   filter(Date >= "1996-01-01") %>%
   rename(Dato = "Date", Gull_usd = "Price")
@@ -53,35 +51,42 @@ usd_nok <- usd_nok %>%
   select(ï..Date, Price, Change..) %>%
   rename(Dato = "ï..Date", usd_kurs = "Price", usd_change = "Change..")
 
+glimpse(usd_nok)
 Sys.setlocale("LC_TIME", "C") #Slet med norske månedforkortelser i as.Date()
 
-glimpse(usd_nok)
-#alt dette på grunn av monthly data, forskjell?? ønskelig?
 usd_nok$Dato <- usd_nok$Dato %>%
   as.character() %>%
-  str_replace(" ", "-")%>%
-  paste("01-", ., sep = "") %>%
-  as.Date(format = "%d-%h-%y")
+  parse_date_time(.,orders = "Omy")
 
 #Joiner dataene med left_join på dato og fjerner de som ikke har match.lurt?
+#akkurat nå er enkelte class 'POSIXct' og andre 'Date'
+gull$Dato <- as.Date(gull$Dato)
+usd_nok$Dato <- as.Date(usd_nok$Dato)
+
 compare <- osebx %>%
   left_join(gull, by = "Dato") %>% 
   left_join(usd_nok, by = "Dato") %>%
   left_join(eqnr, by = "Dato") %>%
   na.omit() #nødvendig dersom inner_join?
 
-compare <- compare %>%
-  left_join(bitcoin, by = "Dato") #egen på grunn av få datoer + daglige vs månedlige
+#'compare <- compare %>%
+#'left_join(bitcoin, by = "Dato") #egen på grunn av få datoer + daglige vs månedlige
 
-compare <- compare %>%
-  mutate(Gull_nok = Gull_usd*usd_kurs, BTC_nok = btc_usd*usd_kurs)
+#compare <- compare %>%
+# mutate(Gull_nok = Gull_usd*usd_kurs, BTC_nok = btc_usd*usd_kurs)
 
-ggplot(compare) +
-  geom_line(aes(x=Dato, y=Kurs, color = "Børs")) + 
-  geom_line(aes(x=Dato, y=EQNR, color = "EQNR")) +
-  geom_line(aes(x=Dato, y=Gull_nok, color = "Gull i NOK")) +
-  geom_line(aes(x=Dato, y=BTC_nok, color = "BTC i NOK")) +
-  ggtitle("Investeringsaltnernativ siden 1996")
+#  ggplot(compare) +
+#  geom_line(aes(x=Dato, y=OSEBX, color = "Børs")) + 
+#  geom_line(aes(x=Dato, y=EQNR, color = "EQNR")) +
+#  geom_line(aes(x=Dato, y=Gull_nok, color = "Gull i NOK")) +
+#  geom_line(aes(x=Dato, y=BTC_nok, color = "BTC i NOK")) +
+#  ggtitle("Investeringsaltnernativ siden 1996")
+
+compare2 <- compare %>%
+  gather(key = "investering", value = "verdi",-Dato)
+
+glimpse(compare2)
+ggplot(compare2, aes(x=Dato, y=verdi, col = investering)) + geom_line() #??
 
 summary(compare)
 #Samvariasjon mellom equinor hovedindeksen?
