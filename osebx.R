@@ -23,22 +23,21 @@ osebx <- osebx %>%
 osebx$Dato <- ymd(osebx$Dato)
 
 #Henter prisdata for bitcoin i USD
-bitcoin <- read.csv("data/BTC_USD Bitfinex Historical Data.csv")
+bitcoin <- read_csv("data/BTC_USD Bitfinex Historical Data.csv")
 glimpse(bitcoin)
 
 bitcoin <- bitcoin %>%
-  select(ï..Date, Price, Change..) %>%
-  rename(Dato = "ï..Date", btc_usd = "Price", btc_change = "Change..")
+  select(Date, Price, "Change %") %>%
+  rename(Dato = "Date", btc_usd = "Price", btc_change = "Change %")
 
 bitcoin$Dato <- mdy(bitcoin$Dato)
-bitcoin$btc_usd <- as.numeric(bitcoin$btc_usd)
 
 head(bitcoin) #tidligste dato er 2. feb 2012 
-tail(bitcoin)
+tail(bitcoin) #akkurat nå er change % class character
 
 #Henter prisdata for gull i USD
-gull <- read.csv("data/monthly_csv.csv")
-str(gull)
+gull <- read_csv("data/monthly_csv.csv")
+glimpse(gull)
 
 gull$Date <- parse_date_time(gull$Date, orders = "Ym")
 gull <- gull %>% 
@@ -46,10 +45,10 @@ gull <- gull %>%
   rename(Dato = "Date", Gull_usd = "Price")
 
 #Henter kursdata for USD/NOK
-usd_nok <- read.csv("data/USD_NOK Historical Data.csv")
+usd_nok <- read_csv("data/USD_NOK Historical Data.csv")
 usd_nok <- usd_nok %>%
-  select(ï..Date, Price, Change..) %>%
-  rename(Dato = "ï..Date", usd_kurs = "Price", usd_change = "Change..")
+  select(Date, Price, "Change %") %>%
+  rename(Dato = "Date", usd_kurs = "Price", usd_change = "Change %")
 
 glimpse(usd_nok)
 Sys.setlocale("LC_TIME", "C") #Slet med norske månedforkortelser i as.Date()
@@ -59,7 +58,7 @@ usd_nok$Dato <- usd_nok$Dato %>%
   parse_date_time(.,orders = "Omy")
 
 #Joiner dataene med left_join på dato og fjerner de som ikke har match.lurt?
-#akkurat nå er enkelte class 'POSIXct' og andre 'Date'
+#akkurat nå er enkelte class 'POSIXct' og andre 'Date', gjør om POSIXct til Date
 gull$Dato <- as.Date(gull$Dato)
 usd_nok$Dato <- as.Date(usd_nok$Dato)
 
@@ -85,10 +84,15 @@ compare <- osebx %>%
 compare2 <- compare %>%
   gather(key = "investering", value = "verdi",-Dato)
 
-glimpse(compare2)
-ggplot(compare2, aes(x=Dato, y=verdi, col = investering)) + geom_line() #??
+summary(compare2)
+compare2$investering <- as.factor(compare2$investering)
+compare2$verdi <- as.numeric(compare2$verdi)
 
-summary(compare)
+glimpse(compare2)
+
+ggplot(compare2, aes(x=Dato, y=verdi, col = investering)) + geom_line()
+
+
 #Samvariasjon mellom equinor hovedindeksen?
 fit <- lm(OSEBX~EQNR, data=compare)
 summary(fit)
