@@ -27,8 +27,8 @@ bitcoin <- read_csv("data/BTC_USD Bitfinex Historical Data.csv")
 glimpse(bitcoin)
 
 bitcoin <- bitcoin %>%
-  select(Date, Price, "Change %") %>%
-  rename(Dato = "Date", btc_usd = "Price", btc_change = "Change %")
+  select(Date, Price) %>% #, "Change %") %>%
+  rename(Dato = "Date", btc_usd = "Price")#, btc_change = "Change %")
 
 bitcoin$Dato <- mdy(bitcoin$Dato)
 
@@ -47,8 +47,8 @@ gull <- gull %>%
 #Henter kursdata for USD/NOK
 usd_nok <- read_csv("data/USD_NOK Historical Data.csv")
 usd_nok <- usd_nok %>%
-  select(Date, Price, "Change %") %>%
-  rename(Dato = "Date", usd_kurs = "Price", usd_change = "Change %")
+  select(Date, Price) %>% #, "Change %") 
+  rename(Dato = "Date", usd_kurs = "Price")#, usd_change = "Change %")
 
 glimpse(usd_nok)
 Sys.setlocale("LC_TIME", "C") #Slet med norske månedforkortelser i as.Date()
@@ -78,15 +78,27 @@ compare2 <- compare %>%
   gather(key = "investering", value = "verdi",-Dato)
 
 summary(compare2)
+compare2 <- compare2 %>%
+  filter(investering != "Gull_usd")
+
 compare2$investering <- as.factor(compare2$investering)
 compare2$verdi <- as.numeric(compare2$verdi)
 
-glimpse(compare2)
+summary(compare2)
 
 ggplot(compare2, aes(x=Dato, y=verdi, col = investering)) + geom_line()
 
-#logs <- compare2 %>%
- # mutate()
+logs <- compare2 %>%
+  group_by(investering) %>%
+  arrange(investering, Dato) %>%
+  mutate(returns = c(NA, diff(log(verdi))))
+
+logs <- logs %>%
+  na.omit() %>%
+  group_by(investering) %>%
+  mutate(cum_returns = cumsum(returns))
+
+ggplot(logs, aes(x=Dato, y= cum_returns, col = investering)) + geom_line()
 
 
 #Samvariasjon mellom equinor hovedindeksen?
