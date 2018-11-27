@@ -71,15 +71,8 @@ compare <- osebx %>%
 #'compare <- compare %>%
 #'left_join(bitcoin, by = "Dato") #egen på grunn av få datoer + daglige vs månedlige
 
-#compare <- compare %>%
-# mutate(Gull_nok = Gull_usd*usd_kurs, BTC_nok = btc_usd*usd_kurs)
-
-#  ggplot(compare) +
-#  geom_line(aes(x=Dato, y=OSEBX, color = "Børs")) + 
-#  geom_line(aes(x=Dato, y=EQNR, color = "EQNR")) +
-#  geom_line(aes(x=Dato, y=Gull_nok, color = "Gull i NOK")) +
-#  geom_line(aes(x=Dato, y=BTC_nok, color = "BTC i NOK")) +
-#  ggtitle("Investeringsaltnernativ siden 1996")
+compare <- compare %>%
+ mutate(Gull_nok = Gull_usd*usd_kurs)#, BTC_nok = btc_usd*usd_kurs)
 
 compare2 <- compare %>%
   gather(key = "investering", value = "verdi",-Dato)
@@ -91,6 +84,9 @@ compare2$verdi <- as.numeric(compare2$verdi)
 glimpse(compare2)
 
 ggplot(compare2, aes(x=Dato, y=verdi, col = investering)) + geom_line()
+
+#logs <- compare2 %>%
+ # mutate()
 
 
 #Samvariasjon mellom equinor hovedindeksen?
