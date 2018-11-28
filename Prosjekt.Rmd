@@ -1,0 +1,61 @@
+---
+title: "Prosjekt"
+author: "Martin & Chris"
+date: "11/28/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(tidyr)
+library(dplyr)
+library(tidyverse)
+
+```
+
+
+```{r cars}
+##  Data Innhenting USA børser 
+
+sp500 <- read_csv("data/^GSPC.csv")
+
+nasdaq <- read_csv("data/NASDAQ.Composite.1970-2018.csv")
+
+dowj <- read_csv("data/Dow Jones Industrial Average 1970-2018.csv")
+
+
+```
+
+
+
+```{r pressure, echo=FALSE}
+
+### Eiendom priser 
+
+oecd.hus <- read_csv("DP_LIVE_27112018111628959.csv")
+
+oecd.hus <- filter(oecd.hus, SUBJECT == "NOMINAL")
+
+oecd.hus <- filter(oecd.hus, FREQUENCY == "Q")
+
+oecd.hus$TIME <- str_replace(oecd.hus$TIME, "Q1", "01-01") 
+oecd.hus$TIME <- str_replace(oecd.hus$TIME, "Q2", "01-04") 
+oecd.hus$TIME <- str_replace(oecd.hus$TIME, "Q3", "01-07") 
+oecd.hus$TIME <- str_replace(oecd.hus$TIME, "Q4", "01-10") 
+
+oecd.hus$TIME <- as.Date(oecd.hus$TIME, "%Y-%m-%d")
+
+colnames(oecd.hus[5] <- "Date" )
+
+colnames(oecd.hus)
+
+ggplot(oecd.hus) +
+geom_line(aes(x=TIME, y= Value)) 
+
+
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
