@@ -12,6 +12,7 @@ library(readr)
 library(tidyr)
 library(dplyr)
 library(tidyverse)
+library(readxl)
 
 ```
 
@@ -33,29 +34,65 @@ dowj <- read_csv("data/Dow Jones Industrial Average 1970-2018.csv")
 ```{r pressure, echo=FALSE}
 
 ### Eiendom priser 
+#oecd.hus <- read_csv("DP_LIVE_27112018111628959.csv")
+#oecd.hus <- filter(oecd.hus, SUBJECT == "NOMINAL")
+#oecd.hus <- filter(oecd.hus, FREQUENCY == "Q")
+#oecd.hus$TIME <- str_replace(oecd.hus$TIME, "Q1", "01-01") 
+#oecd.hus$TIME <- str_replace(oecd.hus$TIME, "Q2", "01-04") 
+#oecd.hus$TIME <- str_replace(oecd.hus$TIME, "Q3", "01-07") 
+#oecd.hus$TIME <- str_replace(oecd.hus$TIME, "Q4", "01-10") 
+#oecd.hus$TIME <- as.Date(oecd.hus$TIME, "%Y-%m-%d")
+#colnames(oecd.hus[6]) <- "Dato"
+#colnames(oecd.hus)
 
-oecd.hus <- read_csv("DP_LIVE_27112018111628959.csv")
+#ggplot(oecd.hus) +
+#geom_line(aes(x=TIME, y= Value)) 
 
-oecd.hus <- filter(oecd.hus, SUBJECT == "NOMINAL")
+# Data sett med månedlig eiendom data 
 
-oecd.hus <- filter(oecd.hus, FREQUENCY == "Q")
+eiendom <- read_excel("data/eiendomnorge.no-oktober-2018-sesongjustert-oktober-2018-2018-11-05_07-32-05_738057.xlsx")
 
-oecd.hus$TIME <- str_replace(oecd.hus$TIME, "Q1", "01-01") 
-oecd.hus$TIME <- str_replace(oecd.hus$TIME, "Q2", "01-04") 
-oecd.hus$TIME <- str_replace(oecd.hus$TIME, "Q3", "01-07") 
-oecd.hus$TIME <- str_replace(oecd.hus$TIME, "Q4", "01-10") 
+colnames(eiendom) <- c("Dato", "nominell", "korrigert")
 
-oecd.hus$TIME <- as.Date(oecd.hus$TIME, "%Y-%m-%d")
+colnames(eiendom)
 
-colnames(oecd.hus[5] <- "Date" )
 
-colnames(oecd.hus)
+ggplot(eiendom) +
+geom_line(aes(x=Dato, y=nominell)) 
 
-ggplot(oecd.hus) +
-geom_line(aes(x=TIME, y= Value)) 
+
+```
+
+
+```{r}
+
+
+renter <- read_excel("data/renter_mnd.xlsx",
+    col_types = c("date", "text", "text", 
+        "text", "text", "text", "text", "text", 
+        "text", "text", "text", "text", "text"))
+
+renter[3:13] <- NULL 
+
+renter <- na.omit(renter)
+
+colnames(renter) <- c("Dato", "styringsrente")
+
+colnames(renter)
+
+plot(renter$Dato, renter$styringsrente, type = "l")
+
+
+
+usa.rente <- read_csv("data/FEDFUNDS.csv")
+
+colnames(usa.rente) <- c("Dato", "styringsrente.usa")
+
+colnames(usa.rente)
 
 
 
 ```
+
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
