@@ -12,6 +12,8 @@ library(ggplot2)
 
 ##### OECD Tall 
 
+# Hvordan effektiviser, pipe coden? 
+
 oecd.hus <- read_csv("DP_LIVE_27112018111628959.csv")
 
 oecd.hus <- filter(oecd.hus, SUBJECT == "NOMINAL")
