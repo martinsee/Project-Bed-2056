@@ -20,11 +20,32 @@ library(readxl)
 ```{r cars}
 ##  Data Innhenting USA børser 
 
-sp500 <- read_csv("data/^GSPC.csv")
+sp500 <- read_csv("data/^GSPC.csv", col_types = cols(Date = col_date(format = "%Y-%m-%d")))
 
-nasdaq <- read_csv("data/NASDAQ.Composite.1970-2018.csv")
+colnames(sp500) <-   c("Dato", "Open", "High", "Low", "Close",  "Adj.Close", "Volume")
 
-dowj <- read_csv("data/Dow Jones Industrial Average 1970-2018.csv")
+#colnames(sp500)
+
+nasdaq <- read_csv("data/NASDAQ.Composite.1970-2018.csv", 
+    col_types = cols(Date = col_date(format = "%Y-%m-%d")))
+
+colnames(nasdaq) <- c("Dato", "Open", "High", "Low", "Close",  "Adj.Close", "Volume")
+
+#colnames(nasdaq)
+
+dowj <- read_csv("data/Dow Jones Industrial Average 1970-2018.csv", 
+    col_types = cols(Date = col_date(format = "%Y-%m-%d")))
+
+colnames(dowj) <- c("Dato", "Open", "High", "Low", "Close",  "Adj.Close", "Volume")
+
+#colnames(dowj)
+
+
+ggplot() + 
+geom_line(data=nasdaq, aes(x=Dato, y=Adj.Close), color='green')+ 
+geom_line(data=sp500, aes(x=Dato, y=Adj.Close), color='red')+
+geom_line(data=dowj, aes(x=Dato, y=Adj.Close), color='blue') 
+
 
 
 ```
@@ -58,13 +79,15 @@ colnames(eiendom)
 
 
 ggplot(eiendom) +
-geom_line(aes(x=Dato, y=nominell)) 
+geom_line(aes(x=Dato, y=nominell))  
 
 
 ```
 
 
 ```{r}
+
+# Norges Bank - styringsrente
 
 
 renter <- read_excel("data/renter_mnd.xlsx",
@@ -80,15 +103,19 @@ colnames(renter) <- c("Dato", "styringsrente")
 
 colnames(renter)
 
+
 plot(renter$Dato, renter$styringsrente, type = "l")
 
 
+# FED - USA renter 
 
 usa.rente <- read_csv("data/FEDFUNDS.csv")
 
 colnames(usa.rente) <- c("Dato", "styringsrente.usa")
 
-colnames(usa.rente)
+# colnames(usa.rente)
+
+#str(usa.rente)
 
 
 
@@ -96,3 +123,20 @@ colnames(usa.rente)
 
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+
+DOWogSP <- bind_cols(dowj$Adj.Close, sp500$Adj.Close, by= "Dato")
+
+### styringsrenten ville ikke plottes, muligens pga andre antallobservasjoner
+
+ggplot() + 
+geom_line(data=nasdaq, aes(x=Dato, y=Adj.Close), color='green')+ 
+geom_line(data=sp500, aes(x=Dato, y=Adj.Close), color='red')+
+geom_line(data=dowj, aes(x=Dato, y=Adj.Close), color='blue') 
+geom_line(data=usa.rente, aes(x=Dato, y=styringsretna.usa), color='organge') 
+
+
+
+```
+
