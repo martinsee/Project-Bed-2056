@@ -3,6 +3,9 @@ library(readxl)
 library(lubridate)
 library(mosaic)
 library(formattable)
+library(tidyquant)
+library(xts)
+library(PerformanceAnalytics)
 
 #Henter data for eiendomspriser
 oecd.hus <- read_csv("DP_LIVE_27112018111628959.csv")
@@ -28,19 +31,37 @@ eqnr <- eqnr %>%
 monthly_eqnr <- eqnr %>%
   group_by(Dato=floor_date(Dato, "month")) %>%
   summarise(EQNR = mean(EQNR))
+#to.monthly?
 
+eqnr_returns <- eqnr %>% 
+  mutate(returns = c(NA, diff(log(EQNR)))) %>%
+  na.omit()
+  
 #Henter kursdata for hovedindeksen OSEBX
-osebx <- read_excel("data/osebx.xlsx")             #kan oppdateres
+osebx_xl <- read_excel("data/osebx.xlsx")             
 
-osebx <- osebx %>%
-  rename(Dato = "OSEBX", OSEBX = "Siste") %>%
+osebx_xl <- osebx_xl %>%
+rename(Dato = "OSEBX", OSEBX = "Siste") %>%
   select(Dato, OSEBX)
 
 osebx$Dato <- ymd(osebx$Dato)
 
+osebx <- read_csv("https://www.netfonds.no/quotes/paperhistory.php?paper=OSEBX.OSE&csv_format=csv",
+                       col_types = cols(quote_date = col_date(format = "%Y%m%d")))
+
+osebx <- osebx %>%
+select(quote_date, close) %>%
+  rename(Dato = "quote_date", OSEBX = "close")
+
 monthly_osebx <- osebx %>%
   group_by(Dato=floor_date(Dato, "month")) %>%
   summarise(OSEBX = mean(OSEBX))
+#to.monthly?
+
+market_returns <- osebx_xl %>% 
+  filter(Dato > "2001-06-17") %>% #matcher data for equinor
+  mutate(returns = c(NA, diff(log(OSEBX)))) %>%
+  na.omit()
 
 #Henter prisdata for bitcoin i USD
 bitcoin <- read_csv("data/BTC_USD Bitfinex Historical Data.csv") #kan oppdateres
@@ -126,6 +147,20 @@ monthly_returns <- monthly_gathered %>%
   mutate(returns = c(NA, exp(diff(log(verdi)))-1)) %>%
   na.omit()
 
+
+tidy_monthly_returns <- monthly_gathered %>%
+  group_by(investering) %>%
+  tq_transmute(mutate_fun = periodReturn, period = "monthly") %>%
+  mutate(cumulative.returns = cumsum(monthly.returns))
+
+
+#tidy_monthly_returns$Dato <- as.POSIXct(tidy_monthly_returns$Dato)         
+#tidy_monthly_returns <- as.xts(tidy_monthly_returns, date_col = Dato)      
+# sd = StdDev(monthly_returns))
+  
+ggplot(tidy_monthly_returns, aes(x=Dato, y = cumulative.returns, color = investering))+
+  geom_line()
+
 summary(monthly_returns) 
 
 quarterly_returns<- quarterly_gathered %>%
@@ -168,21 +203,22 @@ ggplot(cumsum, aes(x=Dato, y= cum_returns, col = investering)) + geom_line()
 ggplot()+
 geom_line(data = cumsum, aes(x=Dato, y= cum_returns, col = investering)) +
 geom_line(data = bitcoin_joined, aes(x=Dato, y=cumsum, col = "BTC"))
-# stemmer returns på bitcoin, skal ha gått ned med 75% siden topp.
+# stemmer returns på bitcoin? skal ha gått ned med 75% siden topp.
 
 #Samvariasjon mellom equinor hovedindeksen?
 fit <- lm(OSEBX~EQNR, data=monthly_joined)
 summary(fit)
-#Multiple R-squared = 0.5772
+#Multiple R-squared = 0.6067
 plotModel(fit)
 
 cor(monthly_joined$OSEBX, monthly_joined$EQNR)
-#korrelasjon = 0.76
+#korrelasjon = 0.78
 
-#lager funksjon for osebx(eqnr)
-f <- makeFun(fit)
-f(200)
+#noe med oljepris?
 
+#beta for equinor (market = osebx)
+beta <- cov(eqnr_returns$returns, market_returns$returns)/var(market_returns$returns)
+beta #1.01
 
 #Samvariasjon mellom gull/nok og USD/nok
 fit2 <- lm(Gull_nok~USD_NOK, data=monthly_joined)
@@ -195,3 +231,10 @@ cor(monthly_joined$Gull_nok, monthly_joined$USD_NOK)
 fit3 <- lm(BTC_nok~USD_NOK, data=monthly_joined)
 summary(fit3)
 cor(monthly_joined$BTC_nok, monthly_joined$usd_kurs)
+
+market <- market_returns %>%
+  full_join(eqnr_returns, by = "Dato")
+
+marketNA <- market %>%
+filter(is.na(.$OSEBX))
+#osebx har 3 færre observasjonser, mangler data for 25. okt 2005, 25 apr 2003 og 27 mai 2002.
