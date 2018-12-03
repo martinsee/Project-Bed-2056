@@ -6,32 +6,55 @@ library(formattable)
 library(tidyquant)
 library(xts)
 library(PerformanceAnalytics)
+library(plotly)
+
 
 #Henter data for eiendomspriser
-oecd.hus <- read_csv("DP_LIVE_27112018111628959.csv")
+eiendom <- read_excel("data/eiendomnorge.no-oktober-2018-sesongjustert-oktober-2018-2018-11-05_07-32-05_738057.xlsx")
 
-oecd.hus <- oecd.hus %>%
-  filter(SUBJECT == "NOMINAL", FREQUENCY == "Q") %>%
-  select(TIME, Value)
+names(eiendom) <- c("Dato", "nominell", "korrigert")
 
-oecd.hus$TIME <- oecd.hus$TIME %>%
-  str_replace_all(c("Q1" = "01-01", "Q2" = "04-01", "Q3" = "07-01", "Q4" = "10-01")) %>%
-  ymd()
+eiendom <- eiendom %>%
+  select(Dato, nominell)
 
-names(oecd.hus) <- c("Dato", "Bolig")
+ggplot(eiendom) +
+  geom_line(aes(x=Dato, y=nominell))  
 
 #Hente kursdata for equinor
 eqnr <- read_csv("https://www.netfonds.no/quotes/paperhistory.php?paper=EQNR.OSE&csv_format=csv",
                  col_types = cols(quote_date = col_date(format = "%Y%m%d")))
 
+eqnr_candle <- eqnr %>%
+  filter(quote_date > "2016-01-01") %>%
+  select(quote_date, open, close, high, low) %>%
+  rename(Dato = "quote_date")
+
+
 eqnr <- eqnr %>%
   select(quote_date, close) %>%
   rename(Dato = "quote_date", EQNR = "close")
 
+
+eqnr_candle %>%
+plot_ly(x = ~Dato, type = "ohlc",
+        open = ~open, high = ~high,
+        low = ~low, close = ~close) %>%
+  layout(title = "Equinor")
+
 monthly_eqnr <- eqnr %>%
   group_by(Dato=floor_date(Dato, "month")) %>%
   summarise(EQNR = mean(EQNR))
-#to.monthly?
+
+
+xts_eqnr_m <- to.monthly(as.xts(eqnr, order.by = eqnr$Dato), OHLC = FALSE)
+eqnr_monthly_prices <- as.tibble(xts_eqnr_m)
+rownames(eqnr_monthly_prices) <- c()
+
+xts_eqnr2 <- xts(eqnr$Dato, eqnr$EQNR, order.by = eqnr$Dato)
+colnames(xts_eqnr2) <- paste0("EQNR") #uten dato_kolonne, men mister desimal.
+
+returns_xts <- Return.calculate(xts_eqnr2)
+Return.annualized(returns_xts, scale = 365)*100 
 
 eqnr_returns <- eqnr %>% 
   mutate(returns = c(NA, diff(log(EQNR)))) %>%
@@ -98,24 +121,26 @@ usd_nok$Dato <- usd_nok$Dato %>%
 #akkurat nå er enkelte class 'POSIXct' og andre 'Date', gjør om POSIXct til Date
 gull$Dato <- as.Date(gull$Dato)
 usd_nok$Dato <- as.Date(usd_nok$Dato)
+eiendom$Dato <- as.Date(eiendom$Dato)
 
 monthly_joined <- monthly_osebx %>%
   inner_join(gull, by = "Dato") %>% 
   inner_join(usd_nok, by = "Dato") %>%
-  inner_join(monthly_eqnr, by = "Dato")
+  inner_join(monthly_eqnr, by = "Dato") %>%
+  inner_join(eiendom, by = "Dato")
 
-quarterly_joined <- oecd.hus %>%
-  left_join(monthly_osebx, by = "Dato") %>% 
-  left_join(gull, by = "Dato") %>% 
-  left_join(usd_nok, by = "Dato") %>%
-  left_join(monthly_eqnr, by = "Dato")
+#quarterly_joined <- oecd.hus %>%
+ # left_join(monthly_osebx, by = "Dato") %>% 
+#  left_join(gull, by = "Dato") %>% 
+#  left_join(usd_nok, by = "Dato") %>%
+#  left_join(monthly_eqnr, by = "Dato")
 
 full <- osebx %>%
   full_join(gull, by = "Dato") %>% 
   full_join(usd_nok, by = "Dato") %>%
   full_join(eqnr, by = "Dato") %>%
-  full_join(oecd.hus, by = "Dato") %>%
-  full_join(bitcoin, by = "Dato")
+  full_join(bitcoin, by = "Dato") %>%
+  full_join(eiendom, by = "Dato")
 
 monthly_joined <- monthly_joined %>%
  mutate(Gull_nok = Gull_usd*USD_NOK)
@@ -129,8 +154,8 @@ bitcoin_joined <- bitcoin %>% #egen på grunn av få måneder med data
 monthly_gathered <- monthly_joined %>%
   gather(key = "investering", value = "verdi",-Dato)
 
-quarterly_gathered <- quarterly_joined %>%
-  gather(key = "investering", value = "verdi",-Dato)
+#quarterly_gathered <- quarterly_joined %>%
+ # gather(key = "investering", value = "verdi",-Dato)
 
 summary(monthly_gathered)
 monthly_gathered <- monthly_gathered %>%
@@ -147,33 +172,61 @@ monthly_returns <- monthly_gathered %>%
   mutate(returns = c(NA, exp(diff(log(verdi)))-1)) %>%
   na.omit()
 
-
 tidy_monthly_returns <- monthly_gathered %>%
   group_by(investering) %>%
-  tq_transmute(mutate_fun = periodReturn, period = "monthly") %>%
+  tq_transmute(mutate_fun = periodReturn, period = "monthly")
+
+total_monthly_returns <- tidy_monthly_returns %>%
   mutate(cumulative.returns = cumsum(monthly.returns))
 
+wide_monthly_returns <- tidy_monthly_returns %>%
+  spread(investering, monthly.returns)
 
-#tidy_monthly_returns$Dato <- as.POSIXct(tidy_monthly_returns$Dato)         
-#tidy_monthly_returns <- as.xts(tidy_monthly_returns, date_col = Dato)      
-# sd = StdDev(monthly_returns))
+monthly_returns_xts <- as.xts(wide_monthly_returns, order.by = wide_monthly_returns$Dato)      
+monthly_returns_xts <- monthly_returns_xts[,2:6] #husk å oppdatere
+
+sd_returns <- StdDev(monthly_returns_xts)
+
+annualized_sd <- StdDev.annualized(monthly_returns_xts, scale = 12) #should be viewed with suspicion
+Return.annualized(monthly_returns_xts, scale =12) #funker ikke, se på to.monthly
+
+cumsum_test <- monthly_returns_xts %>%
+  cumsum() %>%
+  tail(n=1)
+
+plot(StdDev(monthly_returns_xts), cumsum_test)
   
-ggplot(tidy_monthly_returns, aes(x=Dato, y = cumulative.returns, color = investering))+
+ggplot(total_monthly_returns, aes(x=Dato, y = cumulative.returns, color = investering))+
   geom_line()
 
 summary(monthly_returns) 
 
-quarterly_returns<- quarterly_gathered %>%
-  group_by(investering) %>%
-  arrange(investering, Dato) %>%
-  mutate(returns = c(NA, exp(diff(log(verdi)))-1)) %>%
-  na.omit()
+names(monthly_returns_xts)
+equal_weights = c(0.2, 0.2, 0.2, 0.2, 0.2)
+higher_stocks = c(0.4, 0.1, 0.1, 0.4, 0)
 
-cumsum2 <- quarterly_returns %>%
-  group_by(investering) %>%
-  mutate(cum_returns = cumsum(returns))
+#for some reason returns are class character 
+storage.mode(monthly_returns_xts) <- "numeric"
 
-ggplot(cumsum2, aes(x=Dato, y= cum_returns, col = investering)) + geom_line()
+StdDev(monthly_returns_xts, weights = equal_weights) # sd = 0.022
+StdDev(monthly_returns_xts, weights = higher_stocks) # sd = 0.041
+
+Return.portfolio(monthly_returns_xts, weights = equal_weights)
+sum(Return.portfolio(monthly_returns_xts, weights = equal_weights))
+Return.portfolio(monthly_returns_xts, weights = higher_stocks)
+sum(Return.portfolio(monthly_returns_xts, weights = higher_stocks))
+
+#quarterly_returns<- quarterly_gathered %>%
+#  group_by(investering) %>%
+#  arrange(investering, Dato) %>%
+#  mutate(returns = c(NA, exp(diff(log(verdi)))-1)) %>%
+#  na.omit()
+
+#cumsum2 <- quarterly_returns %>%
+#  group_by(investering) %>%
+#  mutate(cum_returns = cumsum(returns))
+
+#ggplot(cumsum2, aes(x=Dato, y= cum_returns, col = investering)) + geom_line()
 
 
 monthly_returns %>% 
@@ -181,13 +234,19 @@ monthly_returns %>%
   summarise(sd = sd(returns))
 
 monthly_returns %>% 
-  group_by(investering, year=floor_date(Dato, "year")) %>%
-  summarise(sum = sum(returns))
+  group_by(investering) %>% #, year=floor_date(Dato, "year")) %>%
+  summarise(sum_monthly_returns = sum(returns), sd_monthly_returns = sd(returns))
 
 sum <- monthly_returns %>%
   group_by(investering, year=floor_date(Dato, "year")) %>%
   summarise(total_returns = sum(returns), mean_price = mean(verdi), sd_price = sd(verdi), mean_returns = mean(returns), sd_returns = sd(returns)) %>%
   arrange(year)
+
+ggplot(sum, aes(x=sd_returns, y= total_returns, color = investering)) +
+  geom_point()
+#ingen tydelig sammenheng mellom sd og årlige returns
+
+
 #sd på verdi eller returns? kan de sammenlignes
 
 sum$total_returns <- percent(sum$total_returns)
