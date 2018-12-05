@@ -18,9 +18,6 @@ library(lubridate)
 library(tidyquant)
 library(xts)
 library(PerformanceAnalytics)
-install.packages("pacman")
-library(pacman)
-install.packages("plotly")
 
 ```
 
@@ -40,7 +37,7 @@ eqnr <- eqnr %>%
 
 
 eqnr_candle %>%
-plot_ly(x = ~Dato, type = "ohlc",
+plotly::plot_ly(x = ~Dato, type = "ohlc",
         open = ~open, high = ~high,
         low = ~low, close = ~close) %>%
   layout(title = "Equinor 2016-")
