@@ -18,6 +18,9 @@ library(lubridate)
 library(tidyquant)
 library(xts)
 library(PerformanceAnalytics)
+install.packages("pacman")
+library(pacman)
+install.packages("plotly")
 
 ```
 
