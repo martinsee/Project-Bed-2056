@@ -12,7 +12,7 @@ Påvirkes bitcoin prisene utviklingen av børsprisene i Norge og USA.
 
 1b) Graf for USA 
 
-2. Korrelasjonstest av variabler opp mot bitcoin pris, med daglig data. 
+2. Korrelasjonstest av variabler opp mot bitcoin pris, med daglig data. Kun bruke data hvor bitcoin data er tilgjengelig. 
 
 2a) Norge
 -Børs (osebx, equnor)
@@ -23,6 +23,7 @@ Påvirkes bitcoin prisene utviklingen av børsprisene i Norge og USA.
 -Børs (DOJ, SP500, Nasdaq)
 -Fearindeks? 
 -Oljepris 
+-Gull 
 
 
 
