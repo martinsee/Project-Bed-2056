@@ -21,6 +21,13 @@ library(PerformanceAnalytics)
 
 ```
 
+Påvirkes bitcoin prisene utviklingen av børsprisene i Norge og USA. 
+
+1. Graf med verdi utvikling av bitcoin, aksjer og diverse andre verdipapirer
+
+1a) Graf for Norge* 
+
+
 ```{r}
 eqnr <- read_csv("https://www.netfonds.no/quotes/paperhistory.php?paper=EQNR.OSE&csv_format=csv",
                  col_types = cols(quote_date = col_date(format = "%Y%m%d")))
@@ -197,6 +204,8 @@ sum(Return.portfolio(monthly_returns_xts, weights = higher_stocks))
 ```
 
 
+1b) Graf for USA - Chris 
+
 ```{r cars}
 ##  Data Innhenting USA børser 
 
@@ -314,6 +323,34 @@ colnames(usa.rente) <- c("Dato", "styringsrente.usa")
 #geom_line(data=usa.rente, aes(x=Dato, y=styringsretna.usa), color='organge') 
 
 
+
+```
+
+2. Korrelasjonstest av variabler opp mot bitcoin pris, med daglig data. Kun bruke data hvor bitcoin data er tilgjengelig. 
+
+
+2a) Bitcoin pris opp mot børs i Norge og USA  - Vises grafisk med prikker/linjer i forskjellige farger ut fra land. 
+
+```{r}
+
+```
+
+
+2b) Norge
+-Børs (osebx, equnor)
+-Oljepris 
+
+```{r}
+
+```
+
+
+2c) USA 
+-Børs (DOJ, SP500, Nasdaq)
+-Fearindeks? 
+-Oljepris 
+
+```{r}
 
 ```
 
