@@ -33,12 +33,10 @@ Den østeriske skolen er opptatt av antall enheter er begrenset, og det har bitco
 Den moderne definisjon fokuserer på kjøpekraft, hvor mye man får kjøpt for godet. Hvis en øknomi består av 100kr i sirkulasjon og sentralbanken trykker 50kr vil den østeriske definisjon si at det har vært 50% inflasjon mens den moderne vil si at inflasjon tilsvarer prisstigningen. Så hvis den økte pengemengden fører til økt sparing slik at innbyggerne putter de 50kr i sparegriene sine og dermed går prisene ikke opp, vil det være 0% i inflasjon selv om pengemenden har gått opp.    
 
 
-
-
 1. Vi skal se nærmere på dette ved å analaysere forskjellige typer av verdipapaier og se hvordan de bevarer sin verdi over tid. 
 
 -Verdi utvikling av aksjer og diverse (Martin graf ok)
--Sammenligne med gull og andre edle medtaller? 
+-Sammenligne med gull og andre edle medtaller?  
 
 
 2. Hvordan bitcoin og andre kryptovalytaer er bruk, ved å se på hvor mye av transkasjonene som er knyttet til øknomisk aktiivtet som et betalingsmiddel og hvor mye som er knyttet til finansiell speskulasjon. 
@@ -65,10 +63,6 @@ Det nådde toppen sin samme dag som futures market for bitcoin åpnet i Chicago. D
 
 
 
-
-
-
-
 Referanser 
 
 Ludvik Von Mises 
@@ -78,6 +72,19 @@ Blanchard, Olivier (2000). Macroeconomics (2nd ed.). Englewood Cliffs, N.J: Pren
 
 
 
-       
+# Forslag 2. 
+
+Påvirkes bitcoin prisene utviklingen av børsprisene i Norge og USA.  
+
+1. Graf med verdi utvikling av bitcoin, aksjer og diverse andre verdipapirer
+
+1a) Graf for Norge 
+
+1b) Graf for USA 
+
+2. 
+
+
+
 
      
