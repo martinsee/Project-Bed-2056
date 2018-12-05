@@ -18,7 +18,7 @@ eiendom <- eiendom %>%
   select(Dato, nominell)
 
 ggplot(eiendom) +
-  geom_line(aes(x=Dato, y=nominell))  
+  geom_line(aes(x=Dato, y=nominell))
 
 #Hente kursdata for equinor
 eqnr <- read_csv("https://www.netfonds.no/quotes/paperhistory.php?paper=EQNR.OSE&csv_format=csv",
