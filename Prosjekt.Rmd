@@ -258,10 +258,10 @@ bitcoin_day <- bitcoin_day %>%
 
 rs <- 5000 # angi sats for rente skalering 
 
-usa10ybond <- read_csv("data/United States 10-Year Bond Yield Historical Data.csv", 
+usa3mbond <- read_csv("data/United States 3-Month Bond Yield Historical Data.csv", 
     col_types = cols(Date = col_date(format = "%b %d, %Y")))
 
-  usa10ybond <- usa10ybond %>%
+  usa3mbond <- usa3mbond %>%
   select(Date, Price) %>%
   filter(Date >= as.Date(cod)) %>%
   mutate(Close = Price * rs)
@@ -277,7 +277,7 @@ geom_line(data=nasdaq, aes(x=Date, y=Close), color='green')+
 geom_line(data=sp500, aes(x=Date, y=Close), color='red')+
 geom_line(data=dowj, aes(x=Date, y=Close), color='orange')+ 
 geom_line(data=bitcoin_day, aes(x=Date, y=Close), color='blue')+
-geom_line(data=usa10ybond, aes(x=Date, y=Close), color='purple')
+geom_line(data=usa2ybond, aes(x=Date, y=Close), color='purple')
 
 
 
