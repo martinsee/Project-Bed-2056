@@ -249,7 +249,7 @@ bitcoin_day <- read_csv("data/BTC_USD Bitfinex Historical Data.csv",
 bitcoin_day <- bitcoin_day %>%
   select(Date, Price) %>%
   rename(Close = "Price")
- 
+
 
 # cut of day 01 Mars 2013 
 
