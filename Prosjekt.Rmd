@@ -213,14 +213,15 @@ sum(Return.portfolio(monthly_returns_xts, weights = higher_stocks))
 ```{r cars}
 ##  Data Innhenting USA børser og bitcoin. Bruker dagens data og sluttkurs. 
 
+cod <- "2013-03-01"  # Cut of date
+
 #### SP500 
 
 sp500 <- read_csv("data/^GSPC.csv", col_types = cols(Date = col_date(format = "%Y-%m-%d")))
 
 sp500 <- sp500 %>%  
-select(Date, Close)
-  
-
+select(Date, Close) %>%
+filter(Date >= as.Date(cod))
 
 
 #### Nasdaq daglig 
@@ -229,7 +230,8 @@ nasdaq <- read_csv("data/NASDAQ.Composite.1970-2018.csv",
     col_types = cols(Date = col_date(format = "%Y-%m-%d")))
 
 nasdaq <- nasdaq %>%
-  select(Date, Close) 
+  select(Date, Close) %>%
+  filter(Date >= as.Date(cod))
 
 
 #### Dow Jones daglig 
@@ -238,7 +240,8 @@ dowj <- read_csv("data/Dow Jones Industrial Average 1970-2018.csv",
     col_types = cols(Date = col_date(format = "%Y-%m-%d")))
 
 dowj <- dowj %>%
-  select(Date, Close)
+  select(Date, Close) %>%
+  filter(Date >= as.Date(cod))
 
 
 #### Bitcoin daglig 
@@ -248,8 +251,23 @@ bitcoin_day <- read_csv("data/BTC_USD Bitfinex Historical Data.csv",
 
 bitcoin_day <- bitcoin_day %>%
   select(Date, Price) %>%
-  rename(Close = "Price")
+  rename(Close = "Price") %>%
+  filter(Date >= as.Date(cod))  
 
+#### USA 10Y Bonds dailty rate 
+
+rs <- 5000 # angi sats for rente skalering 
+
+usa10ybond <- read_csv("data/United States 10-Year Bond Yield Historical Data.csv", 
+    col_types = cols(Date = col_date(format = "%b %d, %Y")))
+
+  usa10ybond <- usa10ybond %>%
+  select(Date, Price) %>%
+  filter(Date >= as.Date(cod)) %>%
+  mutate(Close = Price * rs)
+
+# Renten er skalert opp 10000 ganger for å få frem endringene legge, til orgianl verdi for den på høyre side?   
+  
 
 # cut of day 01 Mars 2013 
 
@@ -258,61 +276,9 @@ ggplot() +
 geom_line(data=nasdaq, aes(x=Date, y=Close), color='green')+ 
 geom_line(data=sp500, aes(x=Date, y=Close), color='red')+
 geom_line(data=dowj, aes(x=Date, y=Close), color='orange')+ 
-geom_line(data=bitcoin_day, aes(x=Date, y=Close), color='blue')
+geom_line(data=bitcoin_day, aes(x=Date, y=Close), color='blue')+
+geom_line(data=usa10ybond, aes(x=Date, y=Close), color='purple')
 
-
-
-
-```
-
-
-
-```{r pressure}
-
-
-#eiendom <- read_excel("data/eiendomnorge.no-oktober-2018-sesongjustert-oktober-2018-2018-11-05_07-32-05_738057.xlsx")
-
-#colnames(eiendom) <- c("Dato", "nominell", "korrigert")
-
-
-#ggplot(eiendom) +
-#geom_line(aes(x=Dato, y=nominell))  
-
-
-```
-
-
-```{r}
-
-# Norges Bank - styringsrente
-
-
-renter <- read_excel("data/renter_mnd.xlsx",
-    col_types = c("date", "text", "text", 
-        "text", "text", "text", "text", "text", 
-        "text", "text", "text", "text", "text"))
-
-renter[3:13] <- NULL 
-
-renter <- na.omit(renter)
-
-colnames(renter) <- c("Dato", "styringsrente")
-
-colnames(renter)
-
-
-plot(renter$Dato, renter$styringsrente, type = "l")
-
-
-# FED - USA renter 
-
-usa.rente <- read_csv("data/FEDFUNDS.csv")
-
-colnames(usa.rente) <- c("Dato", "styringsrente.usa")
-
-# colnames(usa.rente)
-
-#str(usa.rente)
 
 
 
@@ -322,15 +288,18 @@ colnames(usa.rente) <- c("Dato", "styringsrente.usa")
 
 ```{r}
 
-#DOWogSP <- bind_cols(dowj$Adj.Close, sp500$Adj.Close, by= "Dato")
 
-### styringsrenten ville ikke plottes, muligens pga andre antallobservasjoner
+```
 
-#ggplot() + 
-#geom_line(data=nasdaq, aes(x=Dato, y=Adj.Close), color='green')+ 
-#geom_line(data=sp500, aes(x=Dato, y=Adj.Close), color='red')+
-#geom_line(data=dowj, aes(x=Dato, y=Adj.Close), color='blue') 
-#geom_line(data=usa.rente, aes(x=Dato, y=styringsretna.usa), color='organge') 
+
+```{r}
+
+
+```
+
+
+
+```{r}
 
 
 
