@@ -213,7 +213,7 @@ sum(Return.portfolio(monthly_returns_xts, weights = higher_stocks))
 ```{r cars}
 ##  Data Innhenting USA børser og bitcoin. Bruker dagens data og sluttkurs. 
 
-cod <- "2016-03-01"  # Cut of date 
+cod <- "2013-03-01"  # Cut of date 
 
 #### SP500 
 
@@ -257,7 +257,7 @@ bitcoin_day <- bitcoin_day %>%
 #### USA 3 month Bonds dailty rate - Often used to benchmark the rate of risk free capital
 # skalert opp 10000 ganger for å få frem endringene. 
 
-rs <- 10000 # angi sats for rente skalering 
+rs <- 1000 # angi sats for rente skalering 
 
 usa3m <- read_csv("data/United States 3-Month Bond Yield Historical Data.csv", 
     col_types = cols(Date = col_date(format = "%b %d, %Y")))
@@ -287,7 +287,9 @@ geom_line(data=sp500, aes(x=Date, y=Close), color='red')+
 geom_line(data=dowj, aes(x=Date, y=Close), color='orange')+ 
 geom_line(data=bitcoin_day, aes(x=Date, y=Close), color='blue')+
 geom_line(data=usa3m, aes(x=Date, y=Close), color='purple')+ 
-geom_line(data=oilwti, aes(x=Date, y=Close), color='black')
+geom_line(data=oilwti, aes(x=Date, y=Close), color='black')+
+scale_y_continuous(name = "Close",
+                  sec.axis = sec_axis(~./10000, name = "Interest rate %"))
 
 
 
