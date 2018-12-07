@@ -300,6 +300,16 @@ geom_line(data=oilwti, aes(x=Date, y=Close), color='black')
 samlet <- dowj %>% 
   inner_join(nasdaq, oilwti, sp500, usa3m, bitcoin_day, by = "Date")
 
+alle <- dowj %>%
+  full_join(nasdaq, by = "Date") %>% 
+  full_join(oilwti, by = "Date") %>%
+  full_join(sp500, by = "Date") %>%
+  full_join(bitcoin_day, by = "Date") %>%
+  full_join(usa3m, by = "Date") %>% 
+  rename(dow_j = "Close.x", nas = "Close.y", oil = "Price.x",  oil_sk = "Close.x.x",  sp_500 = "Close.y.y", bitcoin = "Close.x.x.x", usa_3m = "Price.y", usa_3m_sk = "Close.y.y.y") %>% 
+  na.omit()
+
+summary(alle)
 
 ```
 
