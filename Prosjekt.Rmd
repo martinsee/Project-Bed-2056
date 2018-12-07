@@ -279,28 +279,28 @@ oilwti <- read_csv("data/Crude Oil WTI  Historical Data.csv",
   select(Date, Price) %>%
   mutate(Close = Price * 100) %>% 
   filter(Date >= as.Date(cod))
+ 
+#### Oslo Børs 
+ 
+ daily_osebx <- read_excel("data/osebx.xlsx")
+
+daily_osebx <- daily_osebx %>%
+  select(OSEBX, Siste) %>%
+  rename(Date = "OSEBX", OSEBX = "Siste")
+daily_osebx$Date <- ymd(daily_osebx$Date)
 
 
-ggplot() + 
-geom_line(data=nasdaq, aes(x=Date, y=Close), color='green')+ 
-geom_line(data=sp500, aes(x=Date, y=Close), color='red')+
-geom_line(data=dowj, aes(x=Date, y=Close), color='orange')+ 
-geom_line(data=bitcoin_day, aes(x=Date, y=Close), color='blue')+
-geom_line(data=usa3m, aes(x=Date, y=Close), color='purple')+ 
-geom_line(data=oilwti, aes(x=Date, y=Close), color='black')+
-scale_y_continuous(name = "Close",
-                  sec.axis = sec_axis(~./10000, name = "Interest rate %"))
-
-
-
-
-```
-
-
-
-```{r}
-samlet <- dowj %>% 
-  inner_join(nasdaq, oilwti, sp500, usa3m, bitcoin_day, by = "Date")
+#ggplot() + 
+#geom_line(data=nasdaq, aes(x=Date, y=Close), color='green')+ 
+#geom_line(data=sp500, aes(x=Date, y=Close), color='red')+
+#geom_line(data=dowj, aes(x=Date, y=Close), color='orange')+ 
+#geom_line(data=bitcoin_day, aes(x=Date, y=Close), color='blue')+
+#geom_line(data=usa3m, aes(x=Date, y=Close), color='purple')+ 
+#geom_line(data=oilwti, aes(x=Date, y=Close), color='black')+
+#scale_y_continuous(name = "Close",
+#                  sec.axis = sec_axis(~./10000, name = "Interest rate %"))+
+#                   ggtitle("Amerikanske markedet") +
+#                   labs(fill = "Eiendel")
 
 alle <- dowj %>%
   full_join(nasdaq, by = "Date") %>% 
@@ -308,15 +308,53 @@ alle <- dowj %>%
   full_join(sp500, by = "Date") %>%
   full_join(bitcoin_day, by = "Date") %>%
   full_join(usa3m, by = "Date") %>% 
+  full_join(daily_osebx, by = "Date") %>% 
   rename(dow_j = "Close.x", nas = "Close.y", oil = "Price.x",  oil_sk = "Close.x.x",  sp_500 = "Close.y.y", bitcoin = "Close.x.x.x", usa_3m = "Price.y", usa_3m_sk = "Close.y.y.y") %>% 
   na.omit()
+    
 
-summary(alle)
+alle_long  <- alle %>% 
+    select(Date, oil_sk, sp_500, bitcoin, usa_3m_sk, OSEBX) %>%
+    gather(key= "asset", value = "Close", -Date)
+
+ggplot(alle_long, aes(x=Date, y=Close, col=asset ))+
+  geom_line()+
+  scale_y_continuous(name = "Close",
+                  sec.axis = sec_axis(~./1000, name = "Interest rate %"))+
+                   ggtitle("Amerikanske markedet") +
+                   labs(fill = "Eiendel")
+
+
 
 ```
 
 
+
 ```{r}
+
+
+
+
+
+```
+
+Korrelasjons i perioden 01.Mars 3013 - Idag 
+
+```{r}
+install.packages("corrplot")
+library(corrplot)
+
+alle_cor  <- alle %>% 
+    select(oil, sp_500, bitcoin, usa_3m, OSEBX)
+
+res <- cor(alle_cor)
+round(res, 2)
+
+corrplot(res, type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45)
+
+corrplot(res2$r, type="upper", order="hclust", 
+         p.mat = res2$P, sig.level = 0.01, insig = "blank")
 
 
 ```
