@@ -1,0 +1,146 @@
+---
+title: "Untitled"
+author: "Martin S. Bjørnerem"
+date: "7 desember 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE)
+library(tidyverse)
+library(readxl)
+library(lubridate)
+library(mosaic)
+library(tsibble)
+```
+
+##Korrelasjonsanalyse
+
+Bitcoin og Oslo index. Vi ser for oss at nordmenn som har investert i bitcoin også har investert i det norske aksjemarkedet. Vi ønsker å undersøke om prisutviklingen på bitcoin påvirker aksjekursene. Vi har hentet daglig data for bitcoin i USD og hovedindeksen (OSEBX). Siden BTC kan kjøpes og selges hele uka, også i helgene, har vi valgt å fjerne observasjoner lørdager og søndager slik at vi kan "matche"" datasettene. En alternativ løsning er ukentlig data. 
+
+#Husk å fjern volum hvis det ikke skal brukes!
+
+```{r data}
+daily_BTC <- read_csv("data/BTC_USD Bitfinex Historical Data.csv") #kan oppdateres
+
+daily_BTC$Date <- mdy(daily_BTC$Date)
+
+daily_BTC <- daily_BTC %>%
+  select(Date, Price) %>%
+  rename(Dato = "Date", BTC_usd = "Price")
+
+BTC2017 <- daily_BTC %>%
+  filter(Dato > "2017-01-01")
+
+daily_osebx <- read_excel("data/osebx.xlsx")
+
+daily_osebx <- daily_osebx %>%
+  select(OSEBX, Siste, 'Offisielt omsatt (NOK)') %>%
+  rename(Dato = "OSEBX", OSEBX = "Siste", osebx_Volum = "Offisielt omsatt (NOK)")
+daily_osebx$Dato <- ymd(daily_osebx$Dato)
+
+
+###joiner data
+
+ukedager <- daily_osebx %>%
+  inner_join(daily_BTC, by = "Dato")
+
+ukedager2017 <- daily_osebx %>%
+  inner_join(BTC2017, by = "Dato")
+
+ukedager
+
+```
+
+
+```{r lm}
+fit <- lm(OSEBX~BTC_usd, data = ukedager)
+summary(fit)
+plotModel(fit)
+```
+
+Vi ser at en lineær modell ikke passer for tidsintervallet. Kanskje prøve en ikke lineær-modell.
+
+```{r lm2}
+fit2 <- lm(OSEBX~BTC_usd, data = ukedager2017)
+summary(fit2)
+plotModel(fit2)
+```
+
+
+Vi er interessert i å se hvordan korrelasjonen har utviklet seg over tid. Vi har benyttet 100 dagers glidende korrelasjon. Korrelasjonen på 100 dager flyttes mot høyre. Enhver observasjonen er et resultat av de siste 100 dagene. 
+
+
+```{r , echo = TRUE}
+rolling_cor <- ukedager %>% 
+  mutate(cor_100 = slide2(OSEBX, BTC_usd, cor, .size = 100, .align = "right")) %>% 
+  unnest() %>%
+  na.omit()
+
+mean.cor <- cor(rolling_cor$OSEBX,rolling_cor$BTC_usd)
+mean.100.cor <- mean(rolling_cor$cor_100)
+mean.cor
+mean.100.cor
+
+ggplot(data = rolling_cor) + geom_line(aes(x = Dato, y = cor_100)) + 
+  geom_hline(yintercept=mean.cor, linetype="dashed", color = "red", size=1) +
+  geom_hline(yintercept=mean.100.cor, linetype="dashed", color = "blue", size=1)
+```
+
+Korrelasjonen varierer sterkt. Den gjennomsnittlige korrelasjonen er høyere enn gjennomsnittet av den 100-dagers glidende korrelasjonen. Hva betyr dette?
+
+Konklusjon: Hovedindeksen og bitcoin-prisen er positivt korrelerte. Det vil si at når BTC øker, øker også OSEBX. Modellen sier ikke noe om årsak og effekt. 
+
+##Bitcoin og det amerikanske aksjemarkedet.
+
+Vi benytter samme data for BTC og samme metode for å slå sammen datasett. 
+
+```{r sp500}
+sp500 <- read_csv("data/^GSPC.csv")
+#S&P 500 er en indeks som består av de 500 største selskapene på NYSE (?)
+
+sp500 <- sp500 %>%  
+  select(Date, Close) %>%
+  rename(Dato = "Date", sp500 = "Close")
+
+ukedager <- ukedager %>%
+  inner_join(sp500, by = "Dato")
+
+ukedager_long <- ukedager%>%
+  gather(index, verdi, -Dato, -BTC_usd, -osebx_Volum)
+
+ukedager_long
+
+ggplot(ukedager_long, aes(x=verdi, y = BTC_usd)) +
+  geom_point() +
+  facet_wrap(~index)
+
+ggplot(ukedager_long, aes(x=verdi, y = BTC_usd, col = index)) +
+  geom_point()
+
+#logaritmisk scale på bitcoin
+ggplot(ukedager_long, aes(x=verdi, y = BTC_usd, col = index)) +
+  geom_point() +
+  scale_y_log10()
+
+```
+
+Glidende korrelasjon BTC og S&P500
+
+```{r}
+
+rolling_cor_sp <- ukedager %>% 
+  mutate(sp_cor_100 = slide2(sp500, BTC_usd, cor, .size = 100, .align = "right")) %>% 
+  unnest() %>%
+  na.omit()
+
+mean.cor.sp <- cor(rolling_cor_sp$sp500,rolling_cor_sp$BTC_usd)
+mean.100.cor.sp <- mean(rolling_cor_sp$sp_cor_100)
+
+ggplot(data = rolling_cor_sp) + geom_line(aes(x = Dato, y = sp_cor_100)) + 
+  geom_hline(yintercept=mean.cor.sp, linetype="dashed", color = "red", size=1) +
+  geom_hline(yintercept=mean.100.cor.sp, linetype="dashed", color = "blue", size=1)
+
+
+```
+

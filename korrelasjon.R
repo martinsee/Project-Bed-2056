@@ -9,22 +9,22 @@
 ### Henter og rydder bitcoin-data
 
 
-daily_btc <- read_csv("data/BTC_USD Bitfinex Historical Data.csv") #kan oppdateres
-glimpse(daily_btc)
+daily_BTC <- read_csv("data/BTC_USD Bitfinex Historical Data.csv") #kan oppdateres
+glimpse(daily_BTC)
 
-daily_btc$Date <- mdy(daily_btc$Date)
+daily_BTC$Date <- mdy(daily_BTC$Date)
 
-daily_btc %>%
+daily_BTC %>%
   plot_ly(x = ~Date, type = "ohlc",
           open = ~Open, high = ~High,
           low = ~Low, close = ~Price) %>%
   layout(title = "Bitcoin")
 
-daily_btc <- daily_btc %>%
+daily_BTC <- daily_BTC %>%
   select(Date, Price) %>%
-  rename(Dato = "Date", btc_usd = "Price")
+  rename(Dato = "Date", BTC_usd = "Price")
 
-btc2017 <- daily_btc %>%
+BTC2017 <- daily_BTC %>%
   filter(Dato > "2017-01-01")
 
 
@@ -43,36 +43,52 @@ daily_osebx$Dato <- ymd(daily_osebx$Dato)
 #### Joiner bitcoin og osebx
 
 
-
 ukedager <- daily_osebx %>%
-  inner_join(daily_btc, by = "Dato")
+  inner_join(daily_BTC, by = "Dato")
 
-plot(ukedager$OSEBX, ukedager$btc_usd)
+ggplot(ukedager, aes(x = BTC_usd, y = OSEBX)) +
+  geom_point()
+#non-linear and overplotting
+
+ggplot(ukedager, aes(x = BTC_usd, y = OSEBX)) +
+  geom_point(alpha = 0.2)
+
+ggplot(ukedager, aes(x = BTC_usd, y = OSEBX)) +
+      geom_point(alpha = 0.3) +
+      scale_x_log10()  
+#strong linear positive relationship, a few outliers (negative BTC)
+
+ggplot(ukedager, aes(x=cut(BTC_usd, breaks = 7), y=OSEBX)) +
+  geom_boxplot()
+#noe med x_labs eller scipen digits?
+#hva betyr boxplots igjen?
+#shows again the relationship is not linear
+
 
 ukedager2017 <- daily_osebx %>%
-  inner_join(btc2017, by = "Dato")
+  inner_join(BTC2017, by = "Dato")
 
-plot(ukedager2017$OSEBX, ukedager2017$btc_usd)
+plot(ukedager2017$OSEBX, ukedager2017$BTC_usd)
 
 
 ##### Lager linæer modell, OSEBX avhengig variabel, bitcoin uavhengig
 
-fit <- lm(OSEBX~btc_usd, data = ukedager)
+fit <- lm(OSEBX~BTC_usd, data = ukedager)
 summary(fit)
 plotModel(fit)
 
-fit2 <- lm(OSEBX~btc_usd, data = ukedager2017)
+fit2 <- lm(OSEBX~BTC_usd, data = ukedager2017)
 summary(fit2)
 plotModel(fit2)
 
 #Undersøker korrelasjon i ulike tidsintervaller.
 
 rolling_cor <- ukedager %>% 
-  mutate(cor_100 = slide2(OSEBX, btc_usd, cor, .size = 100, .align = "right")) %>% 
+  mutate(cor_100 = slide2(OSEBX, BTC_usd, cor, .size = 100, .align = "right")) %>% 
   unnest() %>%
   na.omit()
 
-mean.cor <- cor(rolling_cor$OSEBX,rolling_cor$btc_usd)
+mean.cor <- cor(rolling_cor$OSEBX,rolling_cor$BTC_usd)
 mean.100.cor <- mean(rolling_cor$cor_100)
 
 ggplot(data = rolling_cor) + geom_line(aes(x = Dato, y = cor_100)) + 
@@ -82,38 +98,57 @@ ggplot(data = rolling_cor) + geom_line(aes(x = Dato, y = cor_100)) +
 
 ##### Data fra amerikansk aksjemarkedet (per nå kun S&P 500)
 
-sp500 <- read_csv("data/^GSPC.csv")
+sp_500 <- read_csv("data/^GSPC.csv")
 #S&P 500 er en indeks som består av de 500 største selskapene på NYSE (?)
 
-sp500 <- sp500 %>%  
+sp_500 <- sp_500 %>%  
   select(Date, Close) %>%
   rename(Dato = "Date", sp500 = "Close")
 
+
+######
+#Joiner sp500 til osebx og btc
+
 ukedager <- ukedager %>%
-  inner_join(sp500, by = "Dato")
+  inner_join(sp_500, by = "Dato")
+
+ggplot(ukedager, aes(x = BTC_usd, y = sp500)) +
+  geom_point()
+#non-linear and overplotting
+
+ggplot(ukedager, aes(x = BTC_usd, y = sp500)) +
+  geom_point(alpha = 0.2)
+
+ggplot(ukedager, aes(x = BTC_usd, y = sp500)) +
+  geom_point(alpha = 0.3) +
+  scale_x_log10()  
+#strong linear positive relationship, a few outliers (negative BTC)
+
+#####
+#Fra wide til long
 
 ukedager_long <- ukedager%>%
-  gather(børs, verdi, -Dato, -btc_usd, -osebx_Volum)
+  gather(børs, verdi, -Dato, -BTC_usd, -osebx_Volum)
 
-ggplot(ukedager_long, aes(x=verdi, y = btc_usd)) +
+ggplot(ukedager_long, aes(x=verdi, y = BTC_usd)) +
   geom_point() +
   facet_wrap(~børs)
 
-ggplot(ukedager_long, aes(x=verdi, y = btc_usd, col = børs)) +
-  geom_point() +
+ggplot(ukedager_long, aes(x=verdi, y = BTC_usd, col = børs)) +
+  geom_point()
 
 #logaritmisk scale på bitcoin
-ggplot(ukedager_long, aes(x=verdi, y = btc_usd, col = børs)) +
+ggplot(ukedager_long, aes(x=verdi, y = BTC_usd, col = børs)) +
   geom_point() +
   scale_y_log10()
 
 
 rolling_cor_sp <- ukedager %>% 
-  mutate(sp_cor_100 = slide2(sp500, btc_usd, cor, .size = 100, .align = "right")) %>% 
+  mutate(sp_cor_100 = slide2(sp500, BTC_usd, cor, .size = 100, .align = "right")) %>% 
   unnest() %>%
   na.omit()
 
-mean.cor.sp <- cor(rolling_cor_sp$sp500,rolling_cor_sp$btc_usd)
+mean.cor.sp <- cor(rolling_cor_sp$sp500,rolling_cor_sp$BTC_usd)
 mean.100.cor.sp <- mean(rolling_cor_sp$sp_cor_100)
 
 ggplot(data = rolling_cor_sp) + geom_line(aes(x = Dato, y = sp_cor_100)) + 
