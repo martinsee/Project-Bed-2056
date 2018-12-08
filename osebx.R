@@ -7,18 +7,8 @@ library(tidyquant)
 library(xts)
 library(PerformanceAnalytics)
 library(plotly)
+library(tsibble)
 
-
-#Henter data for eiendomspriser
-eiendom <- read_excel("data/eiendomnorge.no-oktober-2018-sesongjustert-oktober-2018-2018-11-05_07-32-05_738057.xlsx")
-
-names(eiendom) <- c("Dato", "nominell", "korrigert")
-
-eiendom <- eiendom %>%
-  select(Dato, nominell)
-
-ggplot(eiendom) +
-  geom_line(aes(x=Dato, y=nominell))
 
 #Hente kursdata for equinor
 eqnr <- read_csv("https://www.netfonds.no/quotes/paperhistory.php?paper=EQNR.OSE&csv_format=csv",

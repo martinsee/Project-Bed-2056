@@ -65,6 +65,14 @@ ggplot(ukedager, aes(x=cut(BTC_usd, breaks = 7), y=OSEBX)) +
 #shows again the relationship is not linear
 
 
+ukedager_log <- ukedager %>%
+  filter(BTC_usd>0) %>% #, Dato < "2018-01-01") %>%
+  mutate(BTC_log = log(BTC_usd))
+
+summary(ukedager_log$BTC_log)
+#Vi ser at enkelte logaritmer har verdien -Inf, dette skyldes at den originale verdien var 0.
+#Dette ble også vist i plotting. #bruk warning = TRUE i chunk.
+
 ukedager2017 <- daily_osebx %>%
   inner_join(BTC2017, by = "Dato")
 

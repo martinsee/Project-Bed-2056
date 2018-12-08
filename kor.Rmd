@@ -12,6 +12,7 @@ library(readxl)
 library(lubridate)
 library(mosaic)
 library(tsibble)
+library(tidyquant)
 ```
 
 ##Korrelasjonsanalyse
@@ -32,6 +33,9 @@ daily_BTC <- daily_BTC %>%
 BTC2017 <- daily_BTC %>%
   filter(Dato > "2017-01-01")
 
+BTC2018 <- daily_BTC %>%
+  filter(Dato >= "2018-01-01")
+
 daily_osebx <- read_excel("data/osebx.xlsx")
 
 daily_osebx <- daily_osebx %>%
@@ -45,11 +49,29 @@ daily_osebx$Dato <- ymd(daily_osebx$Dato)
 ukedager <- daily_osebx %>%
   inner_join(daily_BTC, by = "Dato")
 
+ukedager
+
 ukedager2017 <- daily_osebx %>%
   inner_join(BTC2017, by = "Dato")
 
-ukedager
+ukedager2018 <- daily_osebx %>%
+  inner_join(BTC2018, by = "Dato")
 
+
+```
+
+```{r volum}
+#web_scrape
+library(rvest)
+
+btc_web <- read_html("https://coinmarketcap.com/currencies/bitcoin/historical-data/?start=20130428&end=20181208")
+btc_web <- btc_web %>% html_nodes("table") 
+btc_web <- btc_web %>% html_table(fill = TRUE)
+
+BTC_vol <- btc_web[[1]] %>%
+  select(Date, Volume)
+
+head(BTC_vol$`Close**`, n=20)
 ```
 
 
@@ -59,12 +81,46 @@ summary(fit)
 plotModel(fit)
 ```
 
-Vi ser at en lineær modell ikke passer for tidsintervallet. Kanskje prøve en ikke lineær-modell.
+Vi ser at en lineær modell ikke passer for tidsintervallet. Kanskje prøve en ikke lineær-modell eller ikke-lineær funksjon. OSEBX mot log(BTC) gir en mye bedre fit. Vi kan undersøke det lineære forholdet mellom OSEBX og logaritmeverdiene av bitcoin. I enkelte ggplot-grafer er en svært lav alpha benyttet for å vise den ekstreme overplottingen for lave verdier av BTC.  
+
+```{r ,warning = TRUE}
+
+ukedager_log <- ukedager %>%
+  filter(BTC_usd>0) %>% #, Dato < "2018-01-01") %>%
+  mutate(BTC_log = log(BTC_usd))
+
+lm_logfit <- lm(OSEBX~BTC_log, data = ukedager_log)
+summary(lm_logfit)
+plotModel(lm_logfit)
+
+ggplot(ukedager, aes(x=BTC_usd, y=OSEBX)) +
+  geom_point()
+
+ggplot(ukedager, aes(x=BTC_usd, y=OSEBX)) +
+  geom_point(alpha = 0.1)
+
+ggplot(ukedager_log, aes(x=BTC_log, y=OSEBX)) +
+  geom_point(alpha = 0.3) + 
+  geom_smooth(method = "lm", se = FALSE, col = "red") +
+  labs(x = "log(BTC)")
+
+logfit <- lm(OSEBX~log(BTC_usd), data = ukedager_log)
+summary(logfit)
+plotModel(logfit)
+
+```
+
+
 
 ```{r lm2}
 fit2 <- lm(OSEBX~BTC_usd, data = ukedager2017)
 summary(fit2)
 plotModel(fit2)
+
+
+fit18 <- lm(OSEBX~BTC_usd, data = ukedager2018)
+summary(fit18)
+plotModel(fit18)
 ```
 
 
@@ -88,6 +144,18 @@ ggplot(data = rolling_cor) + geom_line(aes(x = Dato, y = cor_100)) +
 ```
 
 Korrelasjonen varierer sterkt. Den gjennomsnittlige korrelasjonen er høyere enn gjennomsnittet av den 100-dagers glidende korrelasjonen. Hva betyr dette?
+
+```{r}
+
+BTC_returns <- daily_BTC %>%
+  filter(BTC_usd > 0) %>%
+  tq_transmute(mutate_fun = periodReturn, period = "yearly", type = "arithmetic")
+
+ggplot(BTC_returns, aes(x=Dato, y=yearly.returns)) +
+  geom_line()
+```
+
+
 
 Konklusjon: Hovedindeksen og bitcoin-prisen er positivt korrelerte. Det vil si at når BTC øker, øker også OSEBX. Modellen sier ikke noe om årsak og effekt. 
 
@@ -125,7 +193,7 @@ ggplot(ukedager_long, aes(x=verdi, y = BTC_usd, col = index)) +
 
 ```
 
-Glidende korrelasjon BTC og S&P500
+Glidende korrelasjon BTC og SP500
 
 ```{r}
 
