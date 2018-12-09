@@ -25,7 +25,10 @@ daily_BTC <- daily_BTC %>%
   rename(Dato = "Date", BTC_usd = "Price")
 
 BTC2017 <- daily_BTC %>%
-  filter(Dato > "2017-01-01")
+  filter(Dato >= "2017-01-01" & Dato < "2018-01-01")
+
+BTC2018 <- daily_BTC %>%
+  filter(Dato >= "2018-01-01")
 
 
 #### Henter og rydder data fra OSEBX
@@ -77,6 +80,9 @@ ukedager2017 <- daily_osebx %>%
   inner_join(BTC2017, by = "Dato")
 
 plot(ukedager2017$OSEBX, ukedager2017$BTC_usd)
+
+ukedager2018 <- daily_osebx %>%
+  inner_join(BTC2018, by = "Dato")
 
 
 ##### Lager linæer modell, OSEBX avhengig variabel, bitcoin uavhengig

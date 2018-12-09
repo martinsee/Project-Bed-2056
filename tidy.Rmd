@@ -1,0 +1,74 @@
+---
+title: "Project_tidy"
+author: "Martin S. Bjørnerem"
+date: "9 desember 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+library(readr)
+library(tidyr)
+library(dplyr)
+library(tidyverse)
+library(readxl)
+library(plotly)
+library(lubridate)
+library(tidyquant)
+library(xts)
+library(PerformanceAnalytics)
+```
+
+## Vårt prosjekt: Bitcoin og aksjemarkeder
+
+###Introduksjon
+Hva vi ønsker å gjøre, hvordan, hvilke data, innhentingsmetoder, utvikling i oppgaven underveis.
+
+
+Vi ønsker å undersøke om prisutviklingen på bitcoin påvirker kursene på verdens aksjemarkeder. Vi har hentet daglig data for bitcoin i USD (BTC/USD) og s&p500 så langt bak i tid som mulig. Siden BTC kan kjøpes og selges hele uka, også i helgene, har vi valgt å fjerne observasjoner lørdager og søndager slik at vi kan "matche"" datasettene. En alternativ løsning er ukentlig data. 
+
+### Første blikk/intrykk av bitcoin data
+
+```{r data}
+daily_BTC <- read_csv("data/BTC_USD Bitfinex Historical Data.csv") #kan oppdateres
+
+daily_BTC$Date <- mdy(daily_BTC$Date)
+
+daily_BTC <- daily_BTC %>%
+  select(Date, Price) %>%
+  rename(Dato = "Date", BTC = "Price")
+
+sp500 <- read_csv("data/^GSPC.csv")
+#S&P 500 er en indeks som består av de 500 største selskapene på NYSE (?)
+
+sp500 <- sp500 %>%  
+  select(Date, Close) %>%
+  rename(Dato = "Date", sp500 = "Close")
+
+shanghai <- read_csv("data/Shanghai Composite Historical Data.csv", 
+            col_types = cols(Date = col_date(format = "%b %d, %Y"), 
+                                            Price = col_number()))
+
+daily_shanghai <- shanghai %>%
+  select(Date, Price)
+
+names(daily_shanghai) <- c("Dato", "shanghai")
+
+
+ukedager <- daily_BTC %>%
+  inner_join(sp500, by = "Dato") %>%
+  inner_join(shanghai, by = "Dato")
+
+ukedager_long <- ukedager%>%
+  gather(index, verdi, -Dato, -BTC_usd)
+
+ukedager_long
+
+
+```
+
+
+
+
+
