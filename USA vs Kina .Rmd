@@ -162,9 +162,77 @@ corrplot(res, type = "upper", order = "hclust",
          tl.col = "black", tl.srt = 45)
 
 ```
+Bitcoin datasette går tilbake til 2013. Det gjør at tidshorisonten blir begrenset når en business cickle gjerne er i x år. (sett inn kilde ) 
+
+Vi har derfor laget et til datasett med de dataene som er over lengre tid for å kunne analysere korrelasjoner helt tilbake til 2001. 
+
+```{r}
+
+UC_u <- china_1y %>%
+  full_join(oilwti, by = "Date") %>%
+  full_join(sp500, by = "Date") %>% 
+  full_join(usa3m, by = "Date") %>%
+  full_join(shanghai, by = "Date")%>%
+  rename( china_bond = "Price.x",  oilwti = "Price.y", sp500 = "Close", usa_bond = "Price.x.x", shanghai = "Price.y.y") %>% 
+  na.omit()
+
+
+UC_u_long  <- UC_u %>% 
+  select(Date, china_bond, sp500, oilwti,  usa_bond, shanghai) %>%
+  gather(key= "asset", value = "Close", -Date)
+
+## Lage plot 
+
+ggplot(UC_u_long, aes(x=Date, y=Close, col=asset ))+
+  geom_line()+
+  scale_y_log10(name = "Close")+
+  ggtitle("USA og Kina") 
+
+
+UC_u_cor  <- UC_u %>% 
+  select(china_bond, sp500, oilwti, usa_bond, shanghai)
+
+res2 <- cor(UC_u_cor)
+round(res2, 2)
+
+corrplot(res2, type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45)
+
+```
+
+Vi ser her at korrelasjonene er mye svakere når tidshorisonten øker. Vi ønsker dermed å se på differansen i korrelasjon når vi har forskjellige lenge på dataen ved å lage en differanse korrelasjon matrix.  
+
+```{r}
+res3 <- res[c(1, 2, 3, 5, 6), c(1, 2, 3, 5, 6)]
+
+res4 <- res3 - res2 
+
+corrplot(res4, type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45)
+```
+
+Vi ser her at tre korrelasjonene utmerket seg med stor differanse ut fra hvor lang tidshorisont dataen hadde. 
+
+
+SP500 indeksen og USA  3 month trassury bonds gikk fra å ha en korrelasjon på  0.87 til -0.08
+
+```{r}
+sp_bond <- lm(sp500~usa_bond, data = UC_u)
+summary(sp_bond)
+plotModel(sp_bond)
+```
+
 
 
 ```{r}
+oil_shang <- lm(oilwti~shanghai, data = UC_u)
+summary(oil_shang)
+plotModel(oil_shang)
+```
+```{r}
+bond_shang <- lm(shanghai~china_bond, data = UC_u)
+summary(bond_shang)
+plotModel(bond_shang)
 
 ```
 
