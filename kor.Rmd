@@ -150,14 +150,15 @@ ggplot(ukedager, aes(x=BTC_usd, y=shanghai)) +
 ggplot(ukedager, aes(x=BTC_usd, y=shanghai)) +
   geom_point(alpha = 0.1)
 
+logfit <- lm(shanghai~log(BTC_usd), data = ukedager_log)
+summary(logfit)
+plotModel(logfit)
+
 ggplot(ukedager_log, aes(x=BTC_log, y=shanghai)) +
   geom_point(alpha = 0.3) + 
   geom_smooth(method = "lm", se = FALSE, col = "red") +
   labs(x = "log(BTC)")
 
-logfit <- lm(shanghai~log(BTC_usd), data = ukedager_log)
-summary(logfit)
-plotModel(logfit)
 
 ```
 
@@ -188,6 +189,8 @@ mean.cor <- cor(rolling_cor$shanghai,rolling_cor$BTC_usd)
 mean.100.cor <- mean(rolling_cor$cor_100)
 mean.cor
 mean.100.cor
+
+
 
 ggplot(data = rolling_cor) + geom_line(aes(x = Dato, y = cor_100)) + 
   geom_hline(yintercept=mean.cor, linetype="dashed", color = "red", size=1) +
