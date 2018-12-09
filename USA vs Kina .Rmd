@@ -23,7 +23,7 @@ library(corrplot)
 
 ```{r cars}
 
-cod <- ("2001-11-11")
+cod <- ("2001-12-12")
 
 ## Oil wti 
 
@@ -45,22 +45,16 @@ usa3m <- usa3m %>%
   filter(Date >= as.Date(cod))
 
 
-## Dow J. indeks 
-
-dowj <- read_csv("data/Dow Jones Industrial Average Historical Data.csv",
-                 col_types = cols(Date = col_date(format = "%b %d, %Y")))
-
-dowj <- dowj %>%
-  select(Date, Price) %>%
-  filter(Date >= as.Date(cod))
 
 ## SP500 aksje indeks 
-sp500 <- read_csv("data/^GSPC.csv", col_types = cols(Date = col_date(format = "%Y-%m-%d")))
+sp500 <-  read_csv("data/^GSPC.csv", col_types = cols(Close = col_number(), 
+    Date = col_date(format = "%Y-%m-%d")))
 
 sp500 <- sp500 %>%  
   select(Date, Close) %>%
   filter(Date >= as.Date(cod))
 
+glimpse(sp500)
 
 ## Shanghai
 shanghai <- read_csv("data/Shanghai Composite Historical Data.csv", 
@@ -71,13 +65,6 @@ shanghai <- shanghai %>%
   select(Date, Price) %>%
   filter(Date >= as.Date(cod))
 
-## Shenzhen 
-shen <- read_csv("data/SZSE Component Historical Data.csv", 
-                                           col_types = cols(Date = col_date(format = "%b %d, %Y")))
-
-shen <- shen %>%
-  select(Date, Price ) %>%
-  filter(Date >= as.Date(cod))
 
 
 ## China 1Y Bond 
@@ -98,36 +85,15 @@ bitcoin_day <- bitcoin_day %>%
   filter(Date >= as.Date(cod))  
 
 
-## Nasdaq 
-nasdaq <- read_csv("data/NASDAQ Composite Historical Data.csv", 
-                   col_types = cols(Date = col_date(format = "%b %d, %Y")))
-
-nasdaq <- nasdaq %>%
-  select(Date, Price) %>%
-  filter(Date >= as.Date(cod))
-
-
-## Xpr 
-xpr_day <- read_csv("data/XRP Historical Data - Investing.com.csv", 
-                    col_types = cols(Date = col_date(format = "%b %d, %Y")))
-
-xpr_day <- xpr_day %>%
-  select(Date, Price) %>%
-  rename(Close = "Price") %>%
-  filter(Date >= as.Date(cod))  
-
-
 #### Felles datasett 
 UC <- china_1y %>%
   full_join(sp500, by = "Date") %>% 
   full_join(oilwti, by = "Date") %>%
-  full_join(shen, by = "Date") %>%
   full_join(usa3m, by = "Date") %>%
   full_join(shanghai, by = "Date") %>%
   full_join(bitcoin_day, by = "Date") %>% 
-  full_join(nasdaq, by = "Date") %>%
-  rename(china_bond = "Price.x", sp500 = "Close.x", oilwti = "Price.y", shen = "Price.x.x", usa_bond = "Price.y.y", shanghai = "Price.x.x.x",
-         Bitcoin = "Close.y", Nasdaq = "Price.y.y.y") %>% 
+  rename(china_bond = "Price.x", sp500 = "Close.x", oilwti = "Price.y", usa_bond = "Price.x.x", shanghai = "Price.y.y",
+         Bitcoin = "Close.y") %>% 
       na.omit()
 
 ```
@@ -137,8 +103,8 @@ UC <- china_1y %>%
 ```{r pressure, echo=FALSE}
 
 UC_long  <- UC %>% 
-  filter(Bitcoin > 0.01 & usa_bond > 0.01) %>% 
-  select(Date, china_bond, sp500, oilwti, shen, usa_bond, shanghai, Bitcoin, Nasdaq) %>%
+  filter(Bitcoin > 0.0001 & usa_bond > 0.0001) %>% 
+  select(Date, china_bond, sp500, oilwti, usa_bond, shanghai, Bitcoin) %>%
   gather(key= "asset", value = "Close", -Date)
 
 ## Lage plot 
@@ -149,11 +115,13 @@ ggplot(UC_long, aes(x=Date, y=Close, col=asset ))+
   ggtitle("USA og Kina") 
 
 ```
+Her ser vi endring i verdi på logarismisk skala. Vi ser at bitcoin har hatt en veldig stor økning i 2017, uten at de andre faktorerne i finansmarkedet har har nevneverdige bevegelser. Vi skal dermed se nærmere på dataen og ta en korrelasjonstest. 
+
 
 ```{r}
 
 UC_cor  <- UC %>% 
-  select(china_bond, sp500, oilwti, shen, usa_bond, shanghai, Bitcoin, Nasdaq)
+  select(china_bond, sp500, oilwti, usa_bond, shanghai, Bitcoin)
 
 res <- cor(UC_cor)
 round(res, 2)
@@ -162,9 +130,9 @@ corrplot(res, type = "upper", order = "hclust",
          tl.col = "black", tl.srt = 45)
 
 ```
-Bitcoin datasette går tilbake til 2013. Det gjør at tidshorisonten blir begrenset når en business cickle gjerne er i x år. (sett inn kilde ) 
+Ut fra korrelasjons matrixen kan det se ut som Bitcoin er avhengig av utviklingen i det amerikanske makredet. Med en korrelasjon med SP500 på 0.75 og USA 3 month treasury på 0.85. Det problematiske er at bitcoin datasette går bare tilbake til 2012. Det gjør at tidshorisonten blir begrenset når en business cickle gjerne er i x år. (sett inn kilde ) 
 
-Vi har derfor laget et til datasett med de dataene som er over lengre tid for å kunne analysere korrelasjoner helt tilbake til 2001. 
+Vi har derfor laget et til datasett med de dataene som er over lengre tid for å kunne analysere korrelasjoner helt tilbake til 2001, men da uten bitcoin. 
 
 ```{r}
 
@@ -178,6 +146,7 @@ UC_u <- china_1y %>%
 
 
 UC_u_long  <- UC_u %>% 
+  filter(usa_bond > 0.0001) %>% 
   select(Date, china_bond, sp500, oilwti,  usa_bond, shanghai) %>%
   gather(key= "asset", value = "Close", -Date)
 
@@ -202,37 +171,77 @@ corrplot(res2, type = "upper", order = "hclust",
 
 Vi ser her at korrelasjonene er mye svakere når tidshorisonten øker. Vi ønsker dermed å se på differansen i korrelasjon når vi har forskjellige lenge på dataen ved å lage en differanse korrelasjon matrix.  
 
+
 ```{r}
-res3 <- res[c(1, 2, 3, 5, 6), c(1, 2, 3, 5, 6)]
 
-res4 <- res3 - res2 
 
-corrplot(res4, type = "upper", order = "hclust", 
-         tl.col = "black", tl.srt = 45)
+res2
+
+res3
+
+res3 <- res[c(1, 2, 3, 4, 5), c(1, 2, 3, 4, 5)]
+
+
+res4 <- res3 - res2
+
+res4
+
+
+
+
+
 ```
 
 Vi ser her at tre korrelasjonene utmerket seg med stor differanse ut fra hvor lang tidshorisont dataen hadde. 
 
 
-SP500 indeksen og USA  3 month trassury bonds gikk fra å ha en korrelasjon på  0.87 til -0.08
+SP500 indeksen og USA  3-month treasury bonds gikk fra å ha en korrelasjon på  0.87 til -0.08
 
 ```{r}
 sp_bond <- lm(sp500~usa_bond, data = UC_u)
 summary(sp_bond)
 plotModel(sp_bond)
+
+```
+```{r}
+ggplot(UC_u, aes(x = sp500, y = usa_bond, col = Date)) +
+  geom_point()
+
 ```
 
 
+
+
+I det korte intervallet var det -0.77  til 0.22 i det lange 
 
 ```{r}
 oil_shang <- lm(oilwti~shanghai, data = UC_u)
 summary(oil_shang)
 plotModel(oil_shang)
+
 ```
+
+
+
+
 ```{r}
 bond_shang <- lm(shanghai~china_bond, data = UC_u)
 summary(bond_shang)
 plotModel(bond_shang)
 
+```
+
+
+
+
+
+#Vi ser på de mørkeste priskkene som er før 2005 lå rentene å beveget seg mellom 2-3% og og markedet lå på rundt 1500.
+
+#Så startet børsen å gå kraftig opp, og renten gikk opp til å ligge mellom 3-4 prosent noe som er i samsvar med øknomisk teori om #at oppgangstider vil etterspørselen på kapital gå opp og dermed vil prisen man må betale for å få kapital øke. 
+
+
+```{r}
+ggplot(UC_u, aes(x = china_bond, y = shanghai, col = Date)) +
+  geom_point()
 ```
 
