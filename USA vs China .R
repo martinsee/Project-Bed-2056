@@ -201,3 +201,20 @@ res4
 
 # Når vi endrer tidsintervallet ser vi at i differanse marixen at korrelasjonene er mye svakere ved et lengre tids
 
+
+
+#### Undersøke de korrelasjonene som har stor differanse mellom tidsintervaller 
+
+sp_bond <- lm(sp500~usa_bond, data = UC_u)
+summary(sp_bond)
+plotModel(sp_bond)
+
+oil_shang <- lm(oilwti~shanghai, data = UC)
+summary(oil_shang)
+plotModel(oil_shang)
+
+bond_shang <- lm(shanghai~china_bond, data = UC)
+summary(bond_shang)
+plotModel(bond_shang)
+
+
