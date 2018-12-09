@@ -1,6 +1,6 @@
 ## The trade war comparison 
 
-cod <- ("2002-01-03")
+cod <- ("2001-11-11")
 
 ## Oil wti 
 
@@ -29,6 +29,14 @@ dowj <- read_csv("data/Dow Jones Industrial Average Historical Data.csv",
 
 dowj <- dowj %>%
   select(Date, Price) %>%
+  filter(Date >= as.Date(cod))
+
+## SP500 aksje indeks 
+
+sp500 <- read_csv("data/^GSPC.csv", col_types = cols(Date = col_date(format = "%Y-%m-%d")))
+
+sp500 <- sp500 %>%  
+  select(Date, Close) %>%
   filter(Date >= as.Date(cod))
 
 
@@ -100,24 +108,23 @@ xpr_day <- xpr_day %>%
 
 
 UC <- china_1y %>%
-  full_join(dowj, by = "Date") %>% 
+  full_join(sp500, by = "Date") %>% 
   full_join(oilwti, by = "Date") %>%
   full_join(shen, by = "Date") %>%
   full_join(usa3m, by = "Date") %>%
   full_join(shanghai, by = "Date") %>%
-  full_join(xpr_day, by = "Date") %>% 
   full_join(bitcoin_day, by = "Date") %>% 
-  full_join(nasdaq, by = "Date")%>%
-  rename(china_bond = "Price.x", dowj = "Close.x", oilwti = "Price.y", shen = "Price.x.x", usa_bond = "Price.y.y", shanghai = "Price",
-         Ripple = "Close.x.x", Bitcoin = "Close.y", Nasdaq = "Close.y.y")
-
+  full_join(nasdaq, by = "Date") %>%
+  rename(china_bond = "Price.x", sp500 = "Close.x", oilwti = "Price.y", shen = "Price.x.x", usa_bond = "Price.y.y", shanghai = "Price.x.x.x",
+         Bitcoin = "Close.y", Nasdaq = "Price.y.y.y") %>% 
+      na.omit()
 
 
 ## Gjøre data om til lang    
   
 
 UC_long  <- UC %>% 
-  select(Date, china_bond, dowj, oilwti, shen, usa_bond, shanghai, Ripple, Bitcoin, Nasdaq) %>%
+  select(Date, china_bond, sp500, oilwti, shen, usa_bond, shanghai, Bitcoin, Nasdaq) %>%
   gather(key= "asset", value = "Close", -Date)
 
 ## Lage plot 
@@ -133,7 +140,7 @@ ggplot(UC_long, aes(x=Date, y=Close, col=asset ))+
 library(corrplot)
 
 UC_cor  <- UC %>% 
-  select(china_bond, dowj, oilwti, shen, usa_bond, shanghai, Ripple, Bitcoin, Nasdaq)
+  select(china_bond, sp500, oilwti, shen, usa_bond, shanghai, Bitcoin, Nasdaq)
 
 res <- cor(UC_cor)
 round(res, 2)
@@ -141,19 +148,23 @@ round(res, 2)
 corrplot(res, type = "upper", order = "hclust", 
          tl.col = "black", tl.srt = 45)
 
+# Den negative korrelasjon i Kina er nok et ressultat av at markedet toppet i 2015,
+# hvor shanghai borsen lå på 4600, men den idag ligger 2600 som er en nedgang på 43% 
+# Siden korrelasjons analyser krevet data på samme tidspunkt begrenser det vår muligheter lengre ti
+
 #### Lengre tids analyse uten krypto
 
 UC_u <- china_1y %>%
   full_join(oilwti, by = "Date") %>%
+  full_join(sp500, by = "Date") %>% 
   full_join(usa3m, by = "Date") %>%
-  full_join(shanghai, by = "Date") %>%
-  full_join(nasdaq, by = "Date") %>% 
-  rename( china_bond = "Price.x",  oilwti = "Price.y", usa_bond = "Price.x.x", shanghai = "Price.y.y", nasdaq = "Price") %>% 
+  full_join(shanghai, by = "Date")%>%
+  rename( china_bond = "Price.x",  oilwti = "Price.y", sp500 = "Close", usa_bond = "Price.x.x", shanghai = "Price.y.y") %>% 
   na.omit()
 
 
 UC_u_long  <- UC_u %>% 
-  select(Date, china_bond, oilwti,  usa_bond, shanghai, nasdaq) %>%
+  select(Date, china_bond, sp500, oilwti,  usa_bond, shanghai) %>%
   gather(key= "asset", value = "Close", -Date)
 
 ## Lage plot 
@@ -165,12 +176,28 @@ ggplot(UC_u_long, aes(x=Date, y=Close, col=asset ))+
 
 
 UC_u_cor  <- UC_u %>% 
-  select(china_bond, oilwti, usa_bond, shanghai, nasdaq)
+  select(china_bond, sp500, oilwti, usa_bond, shanghai)
 
-res <- cor(UC_u_cor)
-round(res, 2)
+res2 <- cor(UC_u_cor)
+round(res2, 2)
 
-corrplot(res, type = "upper", order = "hclust", 
+corrplot(res2, type = "upper", order = "hclust", 
          tl.col = "black", tl.srt = 45)
 
+### Differanse matrix 
+
+res3
+
+res2
+
+res3 <- res[c(1, 2, 3, 5, 6), c(1, 2, 3, 5, 6)]
+
+res4 <- res3 - res2 
+
+corrplot(res4, type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45)
+
+res4
+
+# Når vi endrer tidsintervallet ser vi at i differanse marixen at korrelasjonene er mye svakere ved et lengre tids
 
