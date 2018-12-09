@@ -1,6 +1,6 @@
 ---
 title: "USA vs Kina"
-author: "Chris AS"
+author: "Martin S. Bjørnerem og  Chris A. Stokvik"
 date: "12/9/2018"
 output: html_document
 ---
