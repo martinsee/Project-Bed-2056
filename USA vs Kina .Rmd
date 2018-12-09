@@ -23,7 +23,7 @@ library(corrplot)
 
 ```{r cars}
 
-cod <- ("2002-02-03")
+cod <- ("2001-12-12")
 
 ## Oil wti 
 
@@ -47,12 +47,14 @@ usa3m <- usa3m %>%
 
 
 ## SP500 aksje indeks 
-sp500 <- read_csv("data/^GSPC.csv", col_types = cols(Date = col_date(format = "%Y-%m-%d")))
+sp500 <-  read_csv("data/^GSPC.csv", col_types = cols(Close = col_number(), 
+    Date = col_date(format = "%Y-%m-%d")))
 
 sp500 <- sp500 %>%  
   select(Date, Close) %>%
   filter(Date >= as.Date(cod))
 
+glimpse(sp500)
 
 ## Shanghai
 shanghai <- read_csv("data/Shanghai Composite Historical Data.csv", 
@@ -81,8 +83,6 @@ bitcoin_day <- bitcoin_day %>%
   select(Date, Price) %>%
   rename(Close = "Price") %>%
   filter(Date >= as.Date(cod))  
-
-
 
 
 #### Felles datasett 
@@ -115,6 +115,8 @@ ggplot(UC_long, aes(x=Date, y=Close, col=asset ))+
   ggtitle("USA og Kina") 
 
 ```
+Her ser vi endring i verdi på logarismisk skala. Vi ser at bitcoin har hatt en veldig stor økning i 2017, uten at de andre faktorerne i finansmarkedet har har nevneverdige bevegelser. Vi skal dermed se nærmere på dataen og ta en korrelasjonstest. 
+
 
 ```{r}
 
@@ -128,9 +130,9 @@ corrplot(res, type = "upper", order = "hclust",
          tl.col = "black", tl.srt = 45)
 
 ```
-Bitcoin datasette går tilbake til 2013. Det gjør at tidshorisonten blir begrenset når en business cickle gjerne er i x år. (sett inn kilde ) 
+Ut fra korrelasjons matrixen kan det se ut som Bitcoin er avhengig av utviklingen i det amerikanske makredet. Med en korrelasjon med SP500 på 0.75 og USA 3 month treasury på 0.85. Det problematiske er at bitcoin datasette går bare tilbake til 2012. Det gjør at tidshorisonten blir begrenset når en business cickle gjerne er i x år. (sett inn kilde ) 
 
-Vi har derfor laget et til datasett med de dataene som er over lengre tid for å kunne analysere korrelasjoner helt tilbake til 2001. 
+Vi har derfor laget et til datasett med de dataene som er over lengre tid for å kunne analysere korrelasjoner helt tilbake til 2001, men da uten bitcoin. 
 
 ```{r}
 
@@ -172,18 +174,22 @@ Vi ser her at korrelasjonene er mye svakere når tidshorisonten øker. Vi ønsker d
 
 ```{r}
 
-res
 
 res2
 
-res4
+res3
 
 res3 <- res[c(1, 2, 3, 4, 5), c(1, 2, 3, 4, 5)]
 
-res4 <- res3 - res2 
 
-corrplot(res4, type = "upper", order = "hclust", 
-         tl.col = "black", tl.srt = 45)
+res4 <- res3 - res2
+
+res4
+
+
+
+
+
 ```
 
 Vi ser her at tre korrelasjonene utmerket seg med stor differanse ut fra hvor lang tidshorisont dataen hadde. 
