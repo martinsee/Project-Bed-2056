@@ -136,7 +136,7 @@ ggplot(ukedager_long, aes(x=BTC, y=value)) +
 
 For S&P 500: Vi ser at variablene er relaterte, men at forholdet ikke er lineært. En lineær modell vil derfor ikke passe for tidsintervallet. S&P 500 mot log(BTC) gir en mye bedre fit. Vi kan tranformere observasjonene for bitcoin og lage en lineær modell for S&P som utrykk av logaritmeverdiene av bitcoin. I enkelte ggplot-grafer er en svært lav alpha benyttet for å vise den ekstreme overplottingen i nedre venstre hjørne.  
 
-For Shanghai Composite: Ser vi at variablene ikke er relatert i like stor grad. Midtveis i dataen er det en periode hvor de ser ut til å utvikle seg i samme rettning, dette er sannsynligvis er en periode i 2014 hvor begge to gikk mye opp samtidig. Dataen ser ikke ut til å passe til en linær modell da den er veldig sprett og ser ikke til å følge et spesiel korrelering.     
+For Shanghai Composite: Ser vi at variablene ikke er relatert i like stor grad. Midtveis i dataen er det en periode hvor de ser ut til å utvikle seg i samme rettning, dette er sannsynligvis en periode i 2014 hvor begge to gikk mye opp samtidig. Dataen ser ikke ut til å passe til en linær modell da den er veldig sprett og ser ikke til å følge et spesiel korrelering.     
 
 
 
@@ -176,12 +176,13 @@ Hva sier regresjonsmodellen?
 R-squared er 0.89. 89% av variasjon i S&P 500 kan forklares av variasjon i log(BTC). For lineære modeller med kun en uavhengig variabel er verdien lik korrelasjonskoeffesienten opphøyet i 2. 
 
 For Shanghai:
-Forholdet er ikke like tydelig. En stor mengde observasjoner viser til store endringer i den kinesiske indeksen for de samme verdiene av log(BTC). Observasjonene svekker forholdet for den resterende dataen som følger trenden. I funksjon summary ser vi at  Multiple R^2: er 0.182 det betyr at modellen har en veldig svak positiv korrelasjon, siden korrelasjon er er oppgitt fra 0 til 1 og beløpet er nært null. 
+Forholdet er ikke like tydelig. En stor mengde observasjoner viser til store endringer i den kinesiske indeksen for de samme verdiene av log(BTC). Observasjonene svekker forholdet for den resterende dataen som følger trenden. I funksjon summary ser vi at R-squared er 0.182 det betyr at modellen har en veldig svak positiv korrelasjon, siden korrelasjon er er oppgitt fra -1 til 1 og beløpet er positivt men nært null.
 
 
 
-Vi er interessert i å se hvordan forholdet og korrelasjonen mellom indeksene og log av BTC har utviklet seg over tid. 
 
+
+Vi er interessert i å se hvordan forholdet og korrelasjonen mellom indeksene og log av BTC har utviklet seg over tid. Legger dermed til farge for ulike år for å vise utvikling i korrelasjon over tid.
 ```{r, fig.height=10, fig.width= 15}
 ukedager_years <- ukedager_long %>%
   mutate(year = substr((Date), start = 1, stop = 4))
@@ -198,8 +199,6 @@ ggplot(ukedager_years, aes(x = log_BTC, y = value, col = year)) +
   facet_wrap(~index)
 
 ```
-
-Legger til farge for ulike år for å vise utvikling i korrelasjon over tid.
 
 For USA:
 I den andre grafen har hvert år fått en regresjonslinje fra egen lineær modell. Fra grafen ser vi at regresjonslinjene har negativt stigningstall i to årstall, 2014 og 2018. Begge de to årene opplevde bitcoin at "bobla sprakk", uten at børsindeksene falt. 
@@ -357,7 +356,7 @@ corrplot(res, type = "upper", order = "hclust",
 
 Her ser vi en korrelasjons matrix med finansmarkedene i USA og Kina og viktige innsatsfaktorer i markedene. 
 
-Vi ser at oljeprisen har negative korrelasjon på finansmarkedene både i USA og Kina. Det skjer ved at en økning i pris på en viktig innsatsfaktor (olje) prises inn markede ved å redusere akjskurser siden økt oljepris redusert fri egenkapital hos bedrifter, siden det øker kostnadne. Aksjer representerer verdien til selskapet etter at sikkret gjeld er betalt. Derfor er fri egenkapital viktig fordi det øker selskapenes muligheter til å øke egenkapitalen eller utbetale utbytte. (Langli, 2016)
+Vi ser at oljeprisen har negative korrelasjon på finansmarkedene både i USA og Kina. Det skjer ved at en økning i pris på en viktig innsatsfaktor (olje) prises inn markede ved å redusere akjskurser siden økt oljepris redusert fri egenkapital hos bedrifter. Aksjer representerer verdien til selskapet etter at sikkret gjeld er betalt. Derfor er fri egenkapital viktig fordi det øker selskapenes muligheter til å øke egenkapitalen eller utbetale utbytte. (Langli, 2016)
 
 For å vurdere om disse dataen er reliable har vi tatt ut bitcoin slik at vi kan øke tidshorisonten vår fra 2012-2018 til 2001-2018 
 
@@ -386,15 +385,20 @@ corrplot(res2, type = "upper", order = "hclust",
 Vi ser her at korrelasjonene er mye svakere når tidshorisonten øker.  Differansen i korrelasjon mellom dataen har vi samlet i en differanse korrelasjon matrix.  
 
 ```{r}
+# Lager ny matrix av kort tidshorisont dataen uten bitcoin
 
 res3 <- res[c(1, 2, 3, 5, 6), c(1, 2, 3, 5, 6)]
+
+# Trekker fra verdiene i kort tidshorisont matrixen med lang tidshorisont matrixen for å få en differnase matrix
 
 res4 <- res3 - res2
 
 res4
 ```
 
-Her ser vi korrelasjon differanse matrix når vi analyserer korrelasjoner i tidsperiodene 2012-2018 og 2001-2018. Differanse matrixen kunne dessverre ikke vises grafisk siden enkelte differanser i korrelasjon var større enn 1  eller -1 og korrelasjoner kan kun utrykkes innenfor det intervallet. 
+Her ser vi differansen i korrelasjoner mellom tidsperiodene 2012-2018 og 2001-2018. Det er spesielt korrelasjon mellom oljeprisen og aksjeindeksene som viser seg å ha stor endring, hvor Shanghai har -1.002 i differanse, og SP500 har -0.5877. 
+
+Differanse matrixen kunne dessverre ikke vises grafisk siden enkelte differanser i korrelasjon var større enn 1  eller -1 og korrelasjoner kan kun utrykkes innenfor det intervallet. 
 
 #Konklusjon 
 
