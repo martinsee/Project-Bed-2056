@@ -298,7 +298,7 @@ Hva viser modellen? Endring fra enkel regresjonsmodell (kun BTC)? (Finner ikke d
 
 Multiple R-squared er mye lavere for det kinesiske markede (0.5979) enn for det amerikanske (0.9438). Detter er sannaynligvis tilfelledigheter siden det kinesiske markedet har hatt negativ utvikling etter 2015 mens det amerikanske og bitcoin har hatt en sammenfallende positiv utviling hvis man ser på perioden under et. 
 
-Svakheten i dataen skal vi komme illustrere videre i oppgaven ved å analysere samme data men over ulike tidshoisonter. Siden bitcoin dataen er over en relativ kort tidshorisont, og hele perioden sammenfaller med bullmarket etter finanaskrisen kan dataen får en urelatert positiv korrelasjon.   
+Svakheten i dataen skal vi illustrere videre i oppgaven ved å analysere samme data, men over ulike tidshoisonter. Bitcoin dataen er over en relativ kort tidshorisont, og hele perioden sammenfaller med bullmarket i USA etter finanaskrisen, det kan gjøre at dataen får en urelatert positiv korrelasjon.   
 
 
 ```{r}
