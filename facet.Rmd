@@ -415,13 +415,13 @@ Sterk korrelasjon er ikke en indikator på årsakssammenhen eller kausalitet.
 
 ###Kilder:
 
-Langli J. (2016) Årsregnskapet 10. utg, ISBN/EAN: 9788205494510 Gyldendal Oslo  
+-Langli J. (2016) Årsregnskapet 10. utg, ISBN/EAN: 9788205494510 Gyldendal Oslo  
 
 
-- BTC/USD
+-BTC/USD
 https://www.bitfinex.com/stats  (Krever bruker for å laste ned data)
 
-- S&P 500
+-S&P 500
 
 https://www.investing.com/indices/us-spx-500-historical-data
 
