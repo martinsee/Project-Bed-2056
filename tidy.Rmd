@@ -10,9 +10,7 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 
 library(tidyverse)
 library(readxl)
-library(plotly) #bruker candle_stick?
 library(lubridate)
-library(tidyquant)
 library(mosaic)
 library(tsibble)
 ```
@@ -30,7 +28,7 @@ Vi ønsker å undersøke om prisutviklingen på bitcoin påvirker kursene på verdens 
 ```{r data}
 btc <- read_csv("data/BTC_USD Bitfinex Historical Data.csv", 
             col_types = cols(Date = col_date(format = "%b %d, %Y"), 
-                                            Price = col_number())) #kan oppdateres
+                                            Price = col_number())) 
 
 btc <- btc %>%
   select(Date, Price) %>%
@@ -44,22 +42,22 @@ btc %>%
 btc <- btc %>%
   filter(BTC>0)
 
-day_mean <- btc %>%
+day_stats <- btc %>%
   group_by(day = weekdays(Date)) %>%
   summarise(mean = mean(BTC), median = median(BTC))
 
-day_mean$day <- factor(day_mean$day, levels = c("mandag", "tirsdag", "onsdag", "torsdag",  "fredag", "lørdag", "søndag"))
+day_stats$day <- factor(day_stats$day, levels = c("mandag", "tirsdag", "onsdag", "torsdag",  "fredag", "lørdag", "søndag"))
+#nødvendig å spesifisere levels for å hindre alfabetisk rekkefølge.
 
-day_mean
+day_stats
 
-day_mean <- day_mean %>%
+day_stats <- day_stats %>%
   gather(key = stat, value = value, -day)
   
-  ggplot(day_mean, aes(x=day, y=value, fill = stat)) +
+  ggplot(day_stats, aes(x=day, y=value, fill = stat)) +
   geom_bar(stat = "identity", position = "dodge")
 
 sp500 <- read_csv("data/^GSPC.csv")
-#S&P 500 er en indeks som består av de 500 største selskapene på NYSE (?)
 
 sp500 <- sp500 %>%  
   select(Date, Close) %>%
@@ -77,14 +75,14 @@ shanghai <- shanghai %>%
 
 summary(shanghai)
 
-ukedager <- btc %>%
+weekdays <- btc %>%
   inner_join(sp500, by = "Date") %>%
   inner_join(shanghai, by = "Date")
 
-ukedager_long <- ukedager %>%
+weekdays_long <- weekdays %>%
   gather(index, verdi, -Date, -BTC)
 
-ukedager_long
+weekdays_long
 
 ```
 
@@ -92,26 +90,26 @@ ukedager_long
 
 ```{r first look, fig.height=10, fig.width= 15, warning= TRUE}
 
-ggplot(ukedager, aes(x=BTC, y=SP)) +
+ggplot(weekdays, aes(x=BTC, y=SP)) +
   geom_point()
 
-ggplot(ukedager, aes(x=BTC, y=SP)) +
+ggplot(weekdays, aes(x=BTC, y=SP)) +
   geom_point(alpha = 0.1)
 
-logfit <- lm(SP~log(BTC), data = ukedager)
+logfit <- lm(SP~log(BTC), data = weekdays)
 summary(logfit)
 plotModel(logfit)
 
-cor(ukedager$SP, log(ukedager$BTC))
+cor(weekdays$SP, log(weekdays$BTC))
 #cor = 0.94
 
- ukedager <- ukedager %>%
+ weekdays <- weekdays %>%
   mutate(log_BTC = log(BTC))
  
-  ukedager_long <- ukedager_long %>%
+  weekdays_long <- weekdays_long %>%
   mutate(log_BTC = log(BTC))
  
-ggplot(ukedager, aes(x=log_BTC, y=SP)) +
+ggplot(weekdays, aes(x=log_BTC, y=SP)) +
   geom_point(alpha = 0.3) + 
   geom_smooth(method = "lm", se = FALSE, col = "red") +
   labs(x = "log(BTC)")
@@ -129,28 +127,28 @@ R-squared er 0.89. 89% av variasjon i S&P 500 kan forklares av variasjon i log(B
 Vi er interessert i å se hvordan forholdet og korrelasjonen mellom S&P 500 og log av BTC har utviklet seg over tid. 
 
 ```{r}
-ukedager_years <- ukedager %>%
+weekdays_years <- weekdays %>%
   mutate(year = substr((Date), start = 1, stop = 4))
 
-ukedager_years$year <- as.factor(ukedager_years$year)
+weekdays_years$year <- as.factor(weekdays_years$year)
 
 
 
-ukedager_years_l <- ukedager_long %>%
+weekdays_years_l <- weekdays_long %>%
   mutate(year = substr((Date), start = 1, stop = 4))
 
-ukedager_years_l$year <- as.factor(ukedager_years_l$year)
+weekdays_years_l$year <- as.factor(weekdays_years_l$year)
 
-ggplot(ukedager_years, aes(x = log_BTC, y = SP, col = year)) +
+ggplot(weekdays_years, aes(x = log_BTC, y = SP, col = year)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE, col = "black", linetype = "dashed")
 
-ggplot(ukedager_years_l, aes(x = log_BTC, y = verdi, col = year)) +
+ggplot(weekdays_years_l, aes(x = log_BTC, y = verdi, col = year)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE, col = "black", linetype = "dashed") +
   facet_wrap(~index)
 
-ggplot(ukedager_years, aes(x = log_BTC, y = SP, col = year)) +
+ggplot(weekdays_years, aes(x = log_BTC, y = SP, col = year)) +
   geom_smooth(method = "lm", se = FALSE)
 
 
@@ -162,15 +160,15 @@ Fra grafen ser vi at regresjonslinja har negativt stigningstall i to årstall, 20
 Vi har benyttet 200 dagers glidende korrelasjon. Korrelasjonen på 200 dager flyttes mot høyre. Enhver observasjonen er et resultat av de siste 200 dagene. De 200 første observasjonene "forsvinner" dermed da de ikke har en verdi.
 
 ```{r}
-rolling_cor <- ukedager %>% 
+rolling_cor <- weekdays %>% 
   mutate(cor_200 = slide2(SP, log_BTC, cor, .size = 200, .align = "right")) %>% 
   unnest() %>%
   na.omit()
 
-mean.cor <- cor(ukedager$SP,ukedager$log_BTC)
-mean.200.cor <- mean(rolling_cor$cor_200)
-mean.cor
-mean.200.cor
+mean.cor.sp <- cor(weekdays$SP,weekdays$log_BTC)
+mean.200.cor.sp <- mean(rolling_cor$cor_200)
+mean.cor.sp
+mean.200.sp
 
 min.200.cor <- min(rolling_cor$cor_200)
 max.200.cor <- max(rolling_cor$cor_200)
@@ -249,23 +247,23 @@ S&P 500 er sterkt korrelert med BTC. Transformering av bitcoinprisen til logarit
 ```{r shanghai}
 #########
 
-ggplot(ukedager, aes(x=BTC, y=SH)) +
+ggplot(weekdays, aes(x=BTC, y=SH)) +
   geom_point()
 
-ggplot(ukedager, aes(x=BTC, y=SH)) +
+ggplot(weekdays, aes(x=BTC, y=SH)) +
   geom_point(alpha = 0.1)
 
-logfit <- lm(SH~log(BTC), data = ukedager)
+logfit <- lm(SH~log(BTC), data = weekdays)
 summary(logfit)
 plotModel(logfit)
 
-cor(ukedager$SH, log(ukedager$BTC))
+cor(weekdays$SH, log(weekdays$BTC))
 #cor = 0.94
 
-ukedager <- ukedager %>%
+weekdays <- weekdays %>%
   mutate(log_BTC = log(BTC))
 
-ggplot(ukedager, aes(x=log_BTC, y=SH)) +
+ggplot(weekdays, aes(x=log_BTC, y=SH)) +
   geom_point(alpha = 0.3) + 
   geom_smooth(method = "lm", se = FALSE, col = "red") +
   labs(x = "log(BTC)")
@@ -277,16 +275,16 @@ ggplot(ukedager, aes(x=log_BTC, y=SH)) +
 
 
 ```{r}
-ukedager_years <- ukedager %>%
+weekdays_years <- weekdays %>%
   mutate(year = substr((Date), start = 1, stop = 4))
 
-ukedager_years$year <- as.factor(ukedager_years$year)
+weekdays_years$year <- as.factor(weekdays_years$year)
 
-ggplot(ukedager_years, aes(x = log_BTC, y = SH, col = year)) +
+ggplot(weekdays_years, aes(x = log_BTC, y = SH, col = year)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE, col = "black", linetype = "dashed")
 
-ggplot(ukedager_years, aes(x = log_BTC, y = SH, col = year)) +
+ggplot(weekdays_years, aes(x = log_BTC, y = SH, col = year)) +
   geom_smooth(method = "lm", se = FALSE)
 
 ```
@@ -295,19 +293,18 @@ ggplot(ukedager_years, aes(x = log_BTC, y = SH, col = year)) +
 
 
 ```{r}
-rolling_cor <- ukedager %>% 
+rolling_cor <- weekdays %>% 
   mutate(cor_200 = slide2(SH, log_BTC, cor, .size = 200, .align = "right")) %>% 
   unnest() %>%
   na.omit()
 
-mean.cor.c <- cor(ukedager$SH,ukedager$log_BTC)
-mean.200.cor.c <- mean(rolling_cor$cor_200)
-mean.cor.c
-mean.200.cor.c
+mean.cor.sh <- cor(weekdays$SH,weekdays$log_BTC)
+mean.200.cor.sh <- mean(rolling_cor$cor_200)
+mean.cor.sh
+mean.200.cor.sh
 
-min.200.cor.c <- min(rolling_cor$cor_200)
-max.200.cor.c <- max(rolling_cor$cor_200)
-
+min.200.cor.sh <- min(rolling_cor$cor_200)
+max.200.cor.sh <- max(rolling_cor$cor_200)
 
 ggplot(data = rolling_cor) + geom_line(aes(x = Date, y = cor_200)) + 
   geom_hline(yintercept=mean.cor, linetype="dashed", color = "red", size=1) +
