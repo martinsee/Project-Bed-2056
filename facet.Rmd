@@ -22,9 +22,11 @@ library(corrplot)
 Hva vi ønsker å gjøre, hvordan, hvilke data, innhentingsmetoder, utvikling i oppgaven underveis.
 
 
-Vi ønsker å undersøke om prisutviklingen på bitcoin er relatert til kursene på verdens aksjemarkeder. Vi har hentet daglig data for bitcoin i USD (BTC/USD) og s&p500 så langt bak i tid som mulig. Siden BTC kan kjøpes og selges hele uka, også i helgene, mens børsnoterte aksjer kun handles mandag-fredag.Stolpediagrammet nedenfor viser gjennomsnitts- og median-pris for bitcoin fordelt på de ulike ukedagene. Ettersom forskjellene er minimale har vi valgt å fjerne observasjoner lørdager og søndager slik at vi kan "matche" datasettene. I en større oppgave vil det være nødvendig å foreta en hypotesetest om prisen for bitcoin i helgene er signifikant forskjellig fra ukedagene. En alternativ løsning kunne vært å omgjøre prisene og aksjekursene til ukentlig data.
+Vi ønsker å undersøke om prisutviklingen på bitcoin er relatert til kursene på verdens aksjemarkeder. Vi har hentet daglig data for bitcoin i USD (BTC/USD) og s&p500 så langt bak i tid som mulig. BTC kan kjøpes og selges hele uka, også i helgene, mens børsnoterte aksjer kun handles mandag-fredag måtte viudere om vi kunne kutte ut helge dataen. Stolpediagrammet nedenfor viser gjennomsnitts- og median-pris for bitcoin fordelt på de ulike ukedagene. Ettersom forskjellene er minimale har vi valgt å fjerne observasjoner lørdager og søndager slik at vi kan "matche" datasettene. I en større oppgave vil det være nødvendig å foreta en hypotesetest om prisen for bitcoin i helgene er signifikant forskjellig fra ukedagene. En alternativ løsning kunne vært å omgjøre prisene og aksjekursene til ukentlig data.
 
-Vi har valgt den amerikanske indeksen S&P 500 og den kinesiske indeksen Shanghai Composite. Videre forklaring
+Vi har valgt den amerikanske indeksen S&P 500 og den kinesiske indeksen Shanghai Composite. Disse er vide indekser som favner om mange bransjer og dermed kan vi diversifisere bort noe usystematisk risiko som ville gitt bransjemssig støy på dataen. 
+
+I vår analyse ønsker vi også å inludere viktige innsatsfaktorer i øknomien, og vi har dermed inkludert olje prisen (WTI) og kapital representert med statobligasjonrentene på de obligasjonene med kortest løpetid, USA 3 month treasury bonds og Kinesiske 1 Year bonds. Disse to rente blir brukt som mål på renten for risikofri kapital i sine respektive marked. Endringe i risikofri rente er viktig for finansmarkedne fordi det inngår i kalkulasjon av avkasningkravet WACC. Hvis renten går opp må avkastningskravet også gå opp.   
 
 Dra inn flere prediktorvariabler som olje og statsobligasjonsrenter for å gjennomføre en multippel regresjonsanalyse på aksjeindeksene. 
 
