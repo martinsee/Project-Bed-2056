@@ -19,16 +19,13 @@ library(corrplot)
 ## Vårt prosjekt: Bitcoin og aksjemarkeder
 
 ###Introduksjon
-Hva vi ønsker å gjøre, hvordan, hvilke data, innhentingsmetoder, utvikling i oppgaven underveis. Slettelinje?? 
 
+Vi ønsker å undersøke om prisutviklingen på bitcoin er relatert til kursene på verdens aksjemarkeder. Vi har hentet daglig data for bitcoin i USD (BTC/USD), S&P500 og Shanghai Composite så langt bak i tid som mulig. BTC kan kjøpes og selges hele uka, også i helgene, mens børsnoterte aksjer kun handles mandag-fredag måtte vi vurdere om vi kunne kutte ut helge-observasjonene til bitcoin. Vi har beregnet gjennomsnitt for ukedager og helgedager og foretatt en t-test for å finne ut om forskjellene er statistisk signifikante. En alternativ løsning kunne vært å omgjøre prisene og aksjekursene til ukentlig data. Datasettene er lastet ned fra investing.com i form av csv-filer.
 
-Vi ønsker å undersøke om prisutviklingen på bitcoin er relatert til kursene på verdens aksjemarkeder. Vi har hentet daglig data for bitcoin i USD (BTC/USD) og s&p500 så langt bak i tid som mulig. BTC kan kjøpes og selges hele uka, også i helgene, mens børsnoterte aksjer kun handles mandag-fredag måtte vi vurdere om vi kunne kutte ut helge dataen. Stolpediagrammet nedenfor viser gjennomsnitts- og median-pris for bitcoin fordelt på de ulike ukedagene. Ettersom forskjellene er minimale har vi valgt å fjerne observasjoner lørdager og søndager slik at vi kan "matche" datasettene. I en større oppgave vil det være nødvendig å foreta en hypotesetest om prisen for bitcoin i helgene er signifikant forskjellig fra ukedagene. En alternativ løsning kunne vært å omgjøre prisene og aksjekursene til ukentlig data.
+Vi har valgt ut den amerikanske indeksen S&P 500 og den kinesiske indeksen shanghai Composite. Disse er vide indekser som favner om mange bransjer, vi diversifiserer dermed bort noe usystematisk risiko som ville gitt bransjemessig støy på dataen. Hensikten er at indeksene skal representere landets akjsemarkedet best mulig.
 
-Vi har valgt den amerikanske indeksen S&P 500 og den kinesiske indeksen Shanghai Composite. Disse er vide indekser som favner om mange bransjer, vi diversifiserer dermed bort noe usystematisk risiko som ville gitt bransjemessig støy på dataen. 
-
-I vår analyse ønsker vi også å inludere viktige innsatsfaktorer i øknomien, og vi har dermed inkludert olje prisen (WTI) og kapital representert med statobligasjonrentene på de obligasjonene med kortest løpetid, USA 3 month treasury bonds og Kinesiske 1 Year bonds. Disse to rente blir brukt som mål på renten for risikofri kapital i sine respektive marked. Endringe i risikofri rente er viktig for finansmarkedne fordi det inngår i kalkulasjon av avkasningkravet WACC. Hvis renten går opp må avkastningskravet også gå opp. (Langli 2016)   
-
-Dra inn flere prediktorvariabler som olje og statsobligasjonsrenter for å gjennomføre en multippel regresjonsanalyse på aksjeindeksene. SL??? 
+Vi vil undersøke korrelasjonen mellom bitcoin og det amerikanske aksjemarkedet, og sammenligne det med korrelasjon mellom bitcoin og det kinesiske aksjemarkedet. I vår analyse ønsker vi også å inkludere viktige innsatsfaktorer i øknomien, og vi har dermed inkludert oljeprisen (WTI) og kapital representert med statobligasjonrentene på de obligasjonene med kortest løpetid, USA 3 month treasury bonds og Kinesiske 1 Year bonds. Disse to rentene blir brukt som mål på renten for risikofri kapital i sine respektive marked. Endringe i risikofri rente er viktig for finansmarkedne fordi det inngår i kalkulasjon av avkasningkravet WACC. Hvis renten går opp må avkastningskravet også gå opp. (Langli 2016)   
+Oljepris og statsobligasjonsrenter vil brukes som prediktorvariabler i tillegg til bitcoin i en multippel regresjonsanalyse mellom aksjeindeksene og variablene.
 
 ### Første blikk/intrykk av bitcoin data
 
@@ -36,7 +33,6 @@ Dra inn flere prediktorvariabler som olje og statsobligasjonsrenter for å gjenno
 btc <- read_csv("data/BTC_USD Bitfinex Historical Data.csv", 
             col_types = cols(Date = col_date(format = "%b %d, %Y"), 
                                             Price = col_number()))
-
 btc <- btc %>%
   select(Date, Price) %>%
   rename(BTC = "Price")
@@ -48,6 +44,8 @@ ggplot(btc, aes(x=Date, y = BTC)) +
 
 ```
 
+Grafen til BTC viser det ikke, men ved et kall på summary() av dataen ser vi at minimumsprisen på bitcoin er 0. Ved filtrering for 0 viser det seg at datasettet har prisen 0 fire sammenhengende dager. Vi mener at verdien 0 ikke kan være korrekt og representerer manglende data. Datasettet filtreres slik at alle verdier er høyere enn 0. 
+
 ```{r}
 summary(btc)
 
@@ -58,49 +56,88 @@ btc <- btc %>%
   filter(BTC>0)
 ```
 
-Ved et kall på summary() av dataen ser vi at minimumsprisen på bitcoin er 0. Ved filtrering for 0 viser det seg at datasettet har prisen 0 fire sammenhengende dager. Vi mener at verdien 0 ikke kan stemme og at dataen dermed er manglende. Datasettet filtreres slik at alle verdier er høyere enn 0. 
-
+###Undersøker forskjeller mellom ukedager og helgedager:
 ```{r}
-day_stats <- btc %>%
-  group_by(day = weekdays(Date)) %>%
-  summarise(mean = mean(BTC), median = median(BTC))
 
-day_stats$day <- factor(day_stats$day, levels = c("mandag", "tirsdag", "onsdag", "torsdag",  "fredag", "lørdag", "søndag")) #nødvendig å spesifisere levels for å hindre alfabetisk rekkefølge.
+uked <- c("mandag", "tirsdag", "onsdag", "torsdag", "fredag")
+helg <- c("lørdag", "søndag")
+
+btc_days <- btc %>%
+  mutate(day = weekdays(Date)) %>%
+  mutate(type = case_when(
+    day %in% uked ~ "ukedag",
+    day %in% helg ~ "helg"
+  ))
+btc_days$type <- factor(btc_days$type)
+
+day_stats <- btc_days %>%
+  group_by(day) %>%
+  summarise(mean = mean(BTC), median = median(BTC)) 
+day_stats$day <- factor(day_stats$day, levels = c("mandag", "tirsdag", "onsdag", "torsdag",  "fredag", "lørdag", "søndag")) 
+
+#nødvendig å spesifisere levels for å hindre alfabetisk rekkefølge.
 
 day_stats
 
 day_stats <- day_stats %>%
   gather(key = stat, value = value, -day)
-  
+
   ggplot(day_stats, aes(x=day, y=value, fill = stat)) +
   geom_bar(stat = "identity", position = "dodge")
+  
+t.test(BTC~type, data = btc_days, var.equal = TRUE)
 
+```
+
+Stolpediagrammet viser at forskjellene er minimale, men for sikkerhets skyld foretar vi en t-test for å teste om gjenomsnittene for ukedager og helg er signifikant forskjellig. 
+
+Nullhypotese: Ingen forskjell i gjennomsnitt for ukedager og helger. 
+Forutsetter lik varians.
+
+p-verdien fra testen er 0.97, noe som er ekstremt høyt. Forskjellene i gjennomsnittene er dermed ikke signifikante fra null, uansett hvilket signifikansnivå vi velger.
+Ettersom forskjellene ikke er signifikante har vi valgt å fjerne observasjoner for lørdager og søndager slik at vi kan "matche" datasettet til aksjeindeksene.
+
+
+##Data for amerikansk og kinesisk indeks:
+```{r}
 ### laster inn data fra data mappen, så velger kolonnene vi skal bruke med select, og endrer kolonne navn med rename slik at det er lett å forså ### hvilken kolonne som tilfører hvilken verdi når vi laget et felles datasett. 
     
-### s&p 500 - laster inn data, velger kollnnene v
-  
-  
+### s&p 500 - laster inn data, velger kollonnene v
+
 sp500 <- read_csv("data/^GSPC.csv")
 
 sp500 <- sp500 %>%  
   select(Date, Close) %>%
-  rename(SP = "Close")
+  rename(SaP = "Close")
 
 summary(sp500)
 
+ggplot(sp500, aes(x=Date, y=SaP)) +
+  geom_line(col = "darkgreen") +
+  labs(y = "S&P 500")
 
-###shanghai
 
-shanghai <- read_csv("data/Shanghai Composite Historical Data.csv", 
+###Shanghai
+
+shanghai <- read_csv("data/shanghai Composite Historical Data.csv", 
             col_types = cols(Date = col_date(format = "%b %d, %Y"), 
                                             Price = col_number()))
 
 shanghai <- shanghai %>%
   select(Date, Price) %>%
-  rename(SH = "Price")
+  rename(Shanghai = "Price")
 
 summary(shanghai)
 
+ggplot(shanghai, aes(x=Date, y=Shanghai)) +
+  geom_line(col = "purple") +
+  labs(y = "shanghai Composite")
+
+
+
+```
+
+```{r echo = TRUE}
 # Slår sammen datatsettene med hensyn på dato 
 
 ukedager <- btc %>%
@@ -115,74 +152,88 @@ ukedager_long <- ukedager %>%
 head(ukedager_long)
 tail(ukedager_long)
 
+
 ```
 
+Summary() av datasettene for aksjeindeksene viser ingen manglende verdier eller nullverdier. Dataen kobles sammen med inner_join på dato som er felles for alle datasett. Inner_join matcher bare dato hvor alle datasettene har verdier. I tillegg omgjør vi datasettet fra "wide" til "long". Hver dato har nå to av den samme observasjonen av BTC matchet med hver av indeksene i kolonnen "index". Dataen strekker seg fra februar 2012 til november 2018. Det sammenslåtte datasettet kaller vi 'ukedager'. 
 
-##S&P 500 vs BTC og og Shanghai Composite vs BTC
 
-```{r first look, fig.height=10, fig.width= 15}
+##S&P 500 vs BTC og og shanghai Composite vs BTC
+
+```{r first look, fig.height=6, fig.width= 6}
 
 # Visualiserer dataen med ggplot, med bitcoin på x aksen og verdien til indeksene på y aksen. Bruker facet_wrap for å lage plot ved siden av hverandre slik at det er lett å sammenligne. 
 
 ggplot(ukedager_long, aes(x=BTC, y=value)) +
   geom_point() +
-  facet_wrap(~index)
+  facet_wrap(~index) +
+  theme(strip.text = element_text(size=25))
 
 ggplot(ukedager_long, aes(x=BTC, y=value)) +
-  geom_point(alpha = 0.3) +
-  facet_wrap(~index)
+  geom_point(alpha = 0.2) +
+  facet_wrap(~index) +
+  theme(strip.text = element_text(size=25))
 
 ```
 
-For S&P 500: Vi ser at variablene er relaterte, men at forholdet ikke er lineært. En lineær modell vil derfor ikke passe for tidsintervallet. S&P 500 mot log(BTC) gir en mye bedre fit. Vi kan tranformere observasjonene for bitcoin og lage en lineær modell for S&P som utrykk av logaritmeverdiene av bitcoin. I enkelte ggplot-grafer er en svært lav alpha benyttet for å vise den ekstreme overplottingen i nedre venstre hjørne.  
+**For S&P 500:** Vi ser at variablene er relaterte, men at forholdet ikke er lineært. En lineær modell vil derfor ikke passe for tidsintervallet.  Vi kan tranformere observasjonene for bitcoin og lage en lineær modell for S&P som utrykk av logaritmeverdiene av bitcoin. I enkelte ggplot-grafer er en svært lav alpha benyttet for å vise den ekstreme overplottingen i nedre venstre hjørne.
 
-For Shanghai Composite: Ser vi at variablene ikke er relatert i like stor grad. Midtveis i dataen er det en periode hvor de ser ut til å utvikle seg i samme rettning, dette er sannsynligvis en periode i 2014 hvor begge to gikk mye opp samtidig. Dataen ser ikke ut til å passe til en linær modell da den er veldig sprett og ser ikke til å følge et spesiel korrelering.     
-
-
-
-```{r, fig.height=10, fig.width= 15}
-fit <- lm(SP~log(BTC), data = ukedager)
-summary(fit)
-plotModel(fit)
+**For shanghai Composite:** Ser vi at variablene ikke er relatert i like stor grad.Punktene er veldig spredt ut og ser ikke ut til å følge verken en linæer eller ikke-lineær trend. Shanghai-indeksen har stor variasjon for lave verdier av bitcoin. Midtveis i dataen er det en periode hvor de ser ut til å utvikle seg i samme retning, dette er sannsynligvis en periode i 2014 hvor begge to gikk mye opp samtidig. 
 
 
-mod <- lm(SH~log(BTC), data = ukedager)
-summary(mod)
-plotModel(mod)
- 
+```{r, fig.height=10, fig.width= 15, echo = TRUE}
 ukedager <- ukedager %>%
   mutate(log_BTC = log(BTC))
  
   ukedager_long <- ukedager_long %>%
   mutate(log_BTC = log(BTC))
 
-cor(ukedager$SP, ukedager$log_BTC)
+cor(ukedager$SaP, ukedager$log_BTC)
 #cor = 0.94
+
+cor(ukedager$Shanghai, ukedager$log_BTC)
+#cor = 0.43
  
 ggplot(ukedager_long, aes(x=log_BTC, y=value)) +
   geom_point(alpha = 0.3) + 
   geom_smooth(method = "lm", se = FALSE, col = "red") +
   labs(x = "log(BTC)") +
-  facet_wrap(~index)
+  facet_wrap(~index) +
+  theme(strip.text = element_text(size=25))
 
 ```
 
-Begge indeksene har positive regresjonslinjer. Vi ser at forholdet er sterkere for S&P 500 enn Shangai Composite siden punktene ligger tettere rundt regresjonslinja. Det innebærer at summen av kvadratene blir mindre og at modellene har en bedre fit.
+**For S&P:**
+S&P 500 mot log(BTC) gir en mye bedre fit.
+Når vi transformerer bitcoin-prisen til log(BTC) kan se en sterk lineær sammenheng. Styrken i forholdet er lik korrelasjonskoeffisienten, som er 0.94.
+Positiv korrelasjon innebærer at når den ene variabelen øker, øker også den andre. Korrelasjonen er svært sterk og ikke langt unna perfekt. Ved perfekt korrelasjon er koeffisienten?? lik 1.
 
-For S&P:
-Positiv korrelasjon innebærer at når den ene variabelen øker, øker også den andre. Styrken i forholdet er lik korrelasjonskoeffisienten, som er 0.94. Korrelasjonen er svært sterk og ikke langt unna perfekt. Ved perfekt korrelasjon er koeffisienten?? lik 1.
+**For Shanghai:**
+Transformasjonen gir en bedre fit til deler av observasjonene, men ikke det helhetlige forholdet. Forholdet er fremdeles ikke tydelig. En stor mengde observasjoner viser til store endringer i den kinesiske indeksen for de samme verdiene av log(BTC). Observasjonene svekker forholdet for den resterende dataen som følger trenden. korrelasjonskoeffisienten er 0.43. Det er en moderat positiv korrelasjon, men langt svakere enn forholdet mellom BTC og den amerikanske indeksen.
 
-Hva sier regresjonsmodellen?
-R-squared er 0.89. 89% av variasjon i S&P 500 kan forklares av variasjon i log(BTC). For lineære modeller med kun en uavhengig variabel er verdien lik korrelasjonskoeffesienten opphøyet i 2. 
+##Regresjonsmodell
+```{r}
+fit <- lm(SaP~log(BTC), data = ukedager)
+summary(fit)
+plotModel(fit)
 
-For Shanghai:
-Forholdet er ikke like tydelig. En stor mengde observasjoner viser til store endringer i den kinesiske indeksen for de samme verdiene av log(BTC). Observasjonene svekker forholdet for den resterende dataen som følger trenden. I funksjon summary ser vi at R-squared er 0.182 det betyr at modellen har en veldig svak positiv korrelasjon, siden korrelasjon er er oppgitt fra -1 til 1 og beløpet er positivt men nært null.
+mod <- lm(Shanghai~log(BTC), data = ukedager)
+summary(mod)
+plotModel(mod)
+```
 
+##Hva sier regresjonsmodellene?
 
+**S&P**: beta1 (slope) er 192, for hver økning i prediktorvariabelen øker responsvariabelen med 192. R-squared er 0.89. 89% av variasjon i S&P 500 kan forklares av variasjon i log(BTC), noe som er svært høyt. For lineære modeller med kun en uavhengig variabel er verdien lik korrelasjonskoeffesienten opphøyet i 2. 
+
+**Shanghai**: Modellen viser en beta1 på 126. R-squared er svært lav, 0.182, noe som betyr at under 20% av variasjon i den avhengige variabelen kan forklares av variasjon i log(BTC). Det indikerer en lav prediksjonsverdi og dårlig fit.
+
+Begge indeksene har positive regresjonslinjer. Vi ser at forholdet er sterkere for S&P 500 enn Shanghaiangai Composite siden punktene ligger tettere rundt regresjonslinja. Det innebærer at summen av kvadratene blir mindre og at modellen har en bedre fit.
 
 
 
 Vi er interessert i å se hvordan forholdet og korrelasjonen mellom indeksene og log av BTC har utviklet seg over tid. Legger dermed til farge for ulike år for å vise utvikling i korrelasjon over tid.
+
 ```{r, fig.height=10, fig.width= 15}
 ukedager_years <- ukedager_long %>%
   mutate(year = substr((Date), start = 1, stop = 4))
@@ -204,7 +255,7 @@ For USA:
 I den andre grafen har hvert år fått en regresjonslinje fra egen lineær modell. Fra grafen ser vi at regresjonslinjene har negativt stigningstall i to årstall, 2014 og 2018. Begge de to årene opplevde bitcoin at "bobla sprakk", uten at børsindeksene falt. 
 
 For Kina: 
-Vi ser at spredningen i data og avstanden fra regresjnslinjen tyder på veldig stor volatilitet, noe som stemmer overrens med virkeligheten. Shanghai børsen nådde klimax i 2015 og har siden synket over 50%. Stort sette alle datapunktene for 2015 ligger overnfor regresjonslinjen, og i 2018 ser vi at flesteparten av dataen ligger under linjen noe som stemmer overrens med at Bitcoin har falt veldig i verdi i 2018. 
+Vi ser at spredningen i data og avstanden fra regresjnslinjen tyder på veldig stor volatilitet, noe som stemmer overrens med virkeligheten. shanghai børsen nådde klimax i 2015 og har siden synket over 50%. Stort sette alle datapunktene for 2015 ligger overnfor regresjonslinjen, og i 2018 ser vi at flesteparten av dataen ligger under linjen noe som stemmer overrens med at Bitcoin har falt veldig i verdi i 2018. 
 
 
 #Glidende korrelasjon
@@ -212,22 +263,22 @@ Vi har benyttet 200 dagers glidende korrelasjon. Korrelasjonen på 200 dager flyt
 
 ```{r}
 rolling_cor <- ukedager %>% 
-  mutate(cor_200 = slide2(SP, log_BTC, cor, .size = 200, .align = "right")) %>% 
+  mutate(cor_200 = slide2(SaP, log_BTC, cor, .size = 200, .align = "right")) %>% 
   unnest() %>%
   na.omit()
 
-mean.cor.sp <- cor(ukedager$SP,ukedager$log_BTC)
-mean.200.cor.sp <- mean(rolling_cor$cor_200)
-mean.200.cor.sp
-mean.200.cor.sp
+mean.cor.sap <- cor(ukedager$SaP,ukedager$log_BTC)
+mean.200.cor.sap <- mean(rolling_cor$cor_200)
+mean.200.cor.sap
+mean.200.cor.sap
 
-min.200.cor.sp <- min(rolling_cor$cor_200)
-max.200.cor.sp <- max(rolling_cor$cor_200)
+min.200.cor.sap <- min(rolling_cor$cor_200)
+max.200.cor.sap <- max(rolling_cor$cor_200)
 
 
 ggplot(data = rolling_cor) + geom_line(aes(x = Date, y = cor_200)) + 
-  geom_hline(yintercept=mean.cor.sp, linetype="dashed", color = "red", size=1) +
-  geom_hline(yintercept=mean.200.cor.sp, linetype="dashed", color = "blue", size=1)
+  geom_hline(yintercept=mean.cor.sap, linetype="dashed", color = "red", size=1) +
+  geom_hline(yintercept=mean.200.cor.sap, linetype="dashed", color = "blue", size=1)
 ```
 
 For USA: Korrelasjonen varierer sterkt i løpet av bitcoins levetid. Med 200-dagers glidende korrelasjon blir utviklingen jevnere enn ved f.eks 100- eller 50- dagers intervaller. Grafen viser at korrelasjonen mellom den amerikanske indeksen og bitcoin har vært svært høy over to lengre perioder (2013 til midten av 2014 og 2017 til midten av 2018). I perioden mellom var den glidende korrelasjonen ned mot -0.7. I denne perioden var det stor nedgang i prisen på bitcoin, mens den amerikanske børsindeksen fortsatte å øke. I andre halvdel av 2018 sank korrelasjonen igjen ned til -0.5. Gjennomsnittet for 200-dagers korrelasjonene er likevel positivt og ligger på 0.42.
@@ -237,30 +288,26 @@ Grafen viser den samme utviklingen som de fargerike regresjonslinjene fra forrig
 ```{r}
 
 rolling_cor <- ukedager %>% 
-  mutate(cor_200 = slide2(SH, log_BTC, cor, .size = 200, .align = "right")) %>% 
+  mutate(cor_200 = slide2(Shanghai, log_BTC, cor, .size = 200, .align = "right")) %>% 
   unnest() %>%
   na.omit()
 
-mean.cor.sh <- cor(ukedager$SH,ukedager$log_BTC)
-mean.200.cor.sh <- mean(rolling_cor$cor_200)
-mean.cor.sh
-mean.200.cor.sh
+mean.cor.Shanghai <- cor(ukedager$Shanghai,ukedager$log_BTC)
+mean.200.cor.Shanghai <- mean(rolling_cor$cor_200)
+mean.cor.Shanghai
+mean.200.cor.Shanghai
 
-min.200.cor.sh <- min(rolling_cor$cor_200)
-max.200.cor.sh <- max(rolling_cor$cor_200)
+min.200.cor.Shanghai <- min(rolling_cor$cor_200)
+max.200.cor.Shanghai <- max(rolling_cor$cor_200)
 
 
 ggplot(data = rolling_cor) + geom_line(aes(x = Date, y = cor_200)) + 
-  geom_hline(yintercept=mean.cor.sh, linetype="dashed", color = "red", size=1) +
-  geom_hline(yintercept=mean.200.cor.sh, linetype="dashed", color = "blue", size=1)
+  geom_hline(yintercept=mean.cor.Shanghai, linetype="dashed", color = "red", size=1) +
+  geom_hline(yintercept=mean.200.cor.Shanghai, linetype="dashed", color = "blue", size=1)
 ```
 
 For Kina:
-Den kinesiske glidene korrelasjon skille seg fra den Amerikanske ved at den er mye mer negativ. Dette må nok ses i sammenheng med utviklingen i markede. I 2015 ser vi i at korrelasjon er på nesten -1.  Det er på samme tidspunkt som Shanghai børsen når sin all time high og Bitcoin er på sin bunn etter at 2014 bobblen sprakk.  
-
-Hvordan er den kinesiske glidende korrelasjon?  SL? 
-Stemmer den intuitivt med fargelinjene? SL? 
-Hvilken situasjon forklarer topp og bunn? SL? 
+Den kinesiske glidene korrelasjon skille seg fra den Amerikanske ved at den er mye mer negativ. Dette må nok ses i sammenheng med utviklingen i markede. I 2015 ser vi i at korrelasjon er på nesten -1.  Det er på samme tidspunkt som shanghai børsen når sin all time high og Bitcoin er på sin bunn etter at 2014 bobblen sprakk.  
 
 Den gjennomsnittlige korrelasjonen er høyere enn gjennomsnittet av den 200-dagers glidende korrelasjonen. Dette gjelder både for den amerikanske og kinesiske indeksen.
 
@@ -269,7 +316,7 @@ Den gjennomsnittlige korrelasjonen er høyere enn gjennomsnittet av den 200-dager
 
 ```{r multiple data}
 
-### Vi lastere inn flere datasett, endrer kolonne til dato. Så reduserer vi dasette ved å selektere de kolonnene vi trenger og endrer navn, begge handlingene gjør vi gjennom tidyverse sin pipe funksjon slik at det blir mer konsist og letter å forså koden. 
+### Vi lastere inn flere datasett, endrer kolonne til dato. Så reduserer vi datasettet ved å selektere de kolonnene vi trenger og endrer navn, begge handlingene gjør vi gjennom tidyverse sin pipe funksjon slik at det blir mer konsist og letter å forså koden. 
 
 ### Oil wti 
 
@@ -313,22 +360,20 @@ head(multi)
 
 ##For USA:
 ```{r, echo = TRUE}
-multifit.sp <- lm(formula = SP ~ oil + us3m + log(BTC), data = multi)
-summary(multifit.sp)
+multifit.sap <- lm(formula = SaP ~ oil + us3m + log(BTC), data = multi)
+summary(multifit.sap)
 ```
 
 
-En multippel regresjonsanalyse av S&P 500 med amerikansk oljepris, rente på 3-måneders amerikanske statsobligasjoner og transformerte verdier av bitcoin som uavhengige variabler. R-squared for modellen er 0.94, dette er høyere enn ved bitcoin som eneste faktor. Når vi legger til olje og statsobligasjoner øker prediksjonsverdien til modellen med 0.05 (0.94-0.89).
+En multippel regresjonsanalyse av S&P 500 med amerikansk oljepris, rente på 3-måneders amerikanske statsobligasjoner og transformerte verdier av bitcoin som uavhengige variabler. R-squared for modellen er 0.96, dette er høyere enn ved bitcoin som eneste faktor. Når vi legger til olje og statsobligasjoner øker prediksjonsverdien til modellen med 0.07 (0.96-0.89).
 
-##Oppsummering av S&P 500 og BTC
-S&P 500 er sterkt korrelert med BTC. Transformering av bitcoinprisen til logaritmeverdier viser en sterk og positiv korrelasjon. 
 
 ##For Kina:
 
 ```{r}
 
-multifit.sh <- lm(formula = SH ~ oil + ch1y + log(BTC), data = multi)
-summary(multifit.sh)
+multifit.Shanghai <- lm(formula = Shanghai ~ oil + ch1y + log(BTC), data = multi)
+summary(multifit.Shanghai)
 ```
 
 Hva viser modellen? Endring fra enkel regresjonsmodell (kun BTC)? SL?
@@ -336,15 +381,14 @@ Hva viser modellen? Endring fra enkel regresjonsmodell (kun BTC)? SL?
 Multiple R-squared er mye lavere for det kinesiske markede (0.5979) enn for det amerikanske (0.9438). Detter er sannaynligvis tilfelledigheter siden det kinesiske markedet har hatt negativ utvikling etter 2015 mens det amerikanske og bitcoin har hatt en sammenfallende positiv utviling hvis man ser på perioden under et. 
 
 
-
 ##Dataens reliabilitet 
 
-Svakheten i dataen skal vi illustrere videre i oppgaven ved å analysere samme data, men over ulike tidshoisonter. Bitcoin dataen er over en relativ kort tidshorisont 2012-2018, og hele perioden sammenfaller med bullmarket i USA etter finanaskrisen, det kan gjøre at dataen kan får en urelatert positiv korrelasjon.   
+Svakheten i dataen skal vi illustrere videre i oppgaven ved å analysere samme data, men over ulike tidShanghaioisonter. Bitcoin dataen er over en relativ kort tidShanghaiorisont 2012-2018, og hele perioden sammenfaller med bullmarket i USA etter finanaskrisen, det kan gjøre at dataen kan får en urelatert positiv korrelasjon.   
 
 
 ```{r}
 multi_cor  <- multi%>% 
-  select(ch1y, oil, us3m, BTC, SP, SH)
+  select(ch1y, oil, us3m, BTC, SaP, Shanghai)
 
 res <- cor(multi_cor)
 round(res, 2)
@@ -358,7 +402,7 @@ Her ser vi en korrelasjons matrix med finansmarkedene i USA og Kina og viktige i
 
 Vi ser at oljeprisen har negative korrelasjon på finansmarkedene både i USA og Kina. Det skjer ved at en økning i pris på en viktig innsatsfaktor (olje) prises inn markede ved å redusere akjskurser siden økt oljepris redusert fri egenkapital hos bedrifter. Aksjer representerer verdien til selskapet etter at sikkret gjeld er betalt. Derfor er fri egenkapital viktig fordi det øker selskapenes muligheter til å øke egenkapitalen eller utbetale utbytte. (Langli, 2016)
 
-For å vurdere om disse dataen er reliable har vi tatt ut bitcoin slik at vi kan øke tidshorisonten vår fra 2012-2018 til 2001-2018 
+For å vurdere om disse dataen er reliable har vi tatt ut bitcoin slik at vi kan øke tidShanghaiorisonten vår fra 2012-2018 til 2001-2018 
 
 ```{r}
 
@@ -371,7 +415,7 @@ multi_u <- china_1y %>%
   inner_join(sp500, by = "Date")
 
 multi_u_cor  <- multi_u%>% 
-  select(ch1y, oil, us3m, SP, SH)
+  select(ch1y, oil, us3m, SaP, Shanghai)
 
 res2 <- cor(multi_u_cor)
 round(res, 2)
@@ -382,21 +426,21 @@ corrplot(res2, type = "upper", order = "hclust",
 
 ```
 
-Vi ser her at korrelasjonene er mye svakere når tidshorisonten øker.  Differansen i korrelasjon mellom dataen har vi samlet i en differanse korrelasjon matrix.  
+Vi ser her at korrelasjonene er mye svakere når tidShanghaiorisonten øker.  Differansen i korrelasjon mellom dataen har vi samlet i en differanse korrelasjon matrix.  
 
 ```{r}
-# Lager ny matrix av kort tidshorisont dataen uten bitcoin
+# Lager ny matrix av kort tidShanghaiorisont dataen uten bitcoin
 
 res3 <- res[c(1, 2, 3, 5, 6), c(1, 2, 3, 5, 6)]
 
-# Trekker fra verdiene i kort tidshorisont matrixen med lang tidshorisont matrixen for å få en differnase matrix
+# Trekker fra verdiene i kort tidShanghaiorisont matrixen med lang tidShanghaiorisont matrixen for å få en differnase matrix
 
 res4 <- res3 - res2
 
 res4
 ```
 
-Her ser vi differansen i korrelasjoner mellom tidsperiodene 2012-2018 og 2001-2018. Det er spesielt korrelasjon mellom oljeprisen og aksjeindeksene som viser seg å ha stor endring, hvor Shanghai har -1.002 i differanse, og SP500 har -0.5877. 
+Her ser vi differansen i korrelasjoner mellom tidsperiodene 2012-2018 og 2001-2018. Det er spesielt korrelasjon mellom oljeprisen og aksjeindeksene som viser seg å ha stor endring, hvor shanghai har -1.002 i differanse, og SP500 har -0.5877. 
 
 Differanse matrixen kunne dessverre ikke vises grafisk siden enkelte differanser i korrelasjon var større enn 1  eller -1 og korrelasjoner kan kun utrykkes innenfor det intervallet. 
 
@@ -405,12 +449,13 @@ Differanse matrixen kunne dessverre ikke vises grafisk siden enkelte differanser
 Ut fra dataen tyder det på at det amrikanske markedet er tetter knyttet opp mot bitcoin. USA er også verdens største øknomi og USAs BNP er 40% større en Kinas. Da er det kanskje ikke så unaturlig at utvillingen i det amerikanske markede påvirker Bitcoin mer enn Kinas.     
 
 
+##Oppsummering:
+S&P 500 er sterkt korrelert med BTC. Transformering av bitcoinprisen til logaritmeverdier viser en sterk og positiv korrelasjon. Regresjonsmodellen viser at hele 89% av variasjon i indeksen S&P 500 kan forklares av variasjon i log(BTC). Legger vi til oljepris og obligasjonsrente øker R-squared til 0.96. 
+For den kinesiske Shanghai-børsen er ikke modellen like god. Med kun log(BTC) som uavhengig variabel fikk regresjonsmodellen en R-squared på 0.18. Inkludert oljepris og obligasjonsrente økte prediksjonsverdien til 0.62, en stor forbedring. 
+
 ##Svakheter/utfordringer
 
-Utfordringen i vår analyse er tidshorisont. Datasette til bitcoin strekker seg tilbake til 2012, fordi det var da bitcoin startet å bli handlet i organiserte marked.   
-
-Sterk korrelasjon er ikke en indikator på årsakssammenhen eller kausalitet.
-
+Utfordringen i vår analyse er tidShanghaiorisont. Datasette til bitcoin strekker seg kun tilbake til 2012, fordi det var da bitcoin startet å bli handlet i organiserte marked. Sterk korrelasjon er ikke en indikator på årsakssammenhen eller kausalitet. Uansett hvor sterk korrelasjonen er, kan den være helt tilfeldig. Det tar ikke modellene høyde for.
 
 
 ###Kilder:
@@ -431,7 +476,7 @@ https://www.investing.com/commodities/crude-oil-historical-data
 
 -Shanghai Composite 
 
-https://www.investing.com/indices/shanghai-composite-historical-data
+https://www.investing.com/indices/Shanghai-composite-historical-data
 
 -USA 3 month treasury bonds 
 
