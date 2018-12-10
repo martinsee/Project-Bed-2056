@@ -1,7 +1,7 @@
 ---
-title: "facet"
+title: "BED-2056 Introduction to Data Science"
 author: "Martin S. Bjørnerem (X) og Chris A. Stokvik (1) "
-date: "9 desember 2018"
+date: "10 Desember 2018"
 output: html_document
 ---
 
