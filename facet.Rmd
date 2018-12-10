@@ -168,8 +168,7 @@ For USA:
 I den andre grafen har hvert år fått en regresjonslinje fra egen lineær modell. Fra grafen ser vi at regresjonslinjene har negativt stigningstall i to årstall, 2014 og 2018. Begge de to årene opplevde bitcoin at "bobla sprakk", uten at børsindeksene falt. 
 
 For Kina: 
-Vi ser at spredningen i data og avstanden fra regresjnslinjen tyder på veldig stor volatilitet, noe som stemmer overrens med virkeligheten. Shanghai børsen nådde klimax i 2015 og har siden synket over 50%  
-
+Vi ser at spredningen i data og avstanden fra regresjnslinjen tyder på veldig stor volatilitet, noe som stemmer overrens med virkeligheten. Shanghai børsen nådde klimax i 2015 og har siden synket over 50%. Stort sette alle datapunktene for 2015 ligger overnfor regresjonslinjen, og i 2018 ser vi at flesteparten av dataen ligger under linjen noe som stemmer overrens med at Bitcoin har falt veldig i verdi i 2018. 
 
 
 #Glidende korrelasjon
