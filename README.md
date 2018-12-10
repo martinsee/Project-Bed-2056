@@ -21,7 +21,6 @@ Vi valgte derfor å fokusere mer overornet på finansmarkedene i USA og Kina. Vi p
 
 
 
-
 # Forslag 2. 
 
 Påvirkes bitcoin prisene utviklingen av børsprisene i Norge og USA.  
