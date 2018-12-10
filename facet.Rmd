@@ -234,7 +234,7 @@ Den gjennomsnittlige korrelasjonen er høyere enn gjennomsnittet av den 200-dager
 
 ### Oil wti 
 
-oilwti <- read_csv("data/Crude Oil WTI  Historical Data.csv", 
+oilwti <- read_csv("data/Crude Oil WTI Futures Historical Data.csv", 
                    col_types = cols(Date = col_date(format = "%b %d, %Y")))
 
 oilwti <- oilwti %>%
@@ -293,9 +293,56 @@ multifit.c <- lm(formula = SH ~ oil + ch1y + log(BTC), data = multi)
 summary(multifit.c)
 ```
 
-Hva viser modellen? Endring fra enkel regresjonsmodell (kun BTC)?
+Hva viser modellen? Endring fra enkel regresjonsmodell (kun BTC)? (Finner ikke den enkle)
+
+Multiple R-squared er mye lavere for det kinesiske markede (0.5979) enn for det amerikanske (0.9438). Detter er sannaynligvis tilfelledigheter siden det kinesiske markedet har hatt negativ utvikling etter 2015 mens det amerikanske og bitcoin har hatt en sammenfallende positiv utviling hvis man ser på perioden under et. 
+
+Svakheten i dataen skal vi komme illustrere videre i oppgaven ved å analysere samme data men over ulike tidshoisonter. Siden bitcoin dataen er over en relativ kort tidshorisont, og hele perioden sammenfaller med bullmarket etter finanaskrisen kan dataen får en urelatert positiv korrelasjon.   
 
 
-#Konklusjon
+```{r}
+multi_cor  <- multi%>% 
+  select(ch1y, oil, us3m, BTC, SP, SH)
+
+res <- cor(multi_cor)
+round(res, 2)
+
+corrplot(res, type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45)
+```
+Her ser vi en korrelasjons matrix på viktige faktorer i finansmarkedene i USA og Kina. Vi har valgt å tatt med USA 3 month treassury bonds, og Kinesiske 1 year bonds. Disse blir ansett for å være benchmarken rente for risikofri kapital, og er dermed viktig i verdsettingen av eiendeler.  
+
+Her ser vi oljeprisen negative utvikling på finansmarkedene. Det skjer ved at en økning i pris på en viktig innsatsfaktor (olje) prises inn markede ved å redusere akjskurser siden økt oljepris redusert fri egenkapital hos bedrifter.  
+
+```{r}
+
+multi_u <- china_1y %>%
+  inner_join(oilwti, by = "Date") %>%
+  inner_join(usa3m, by = "Date") %>%
+  inner_join(shanghai, by = "Date") %>%
+  inner_join(sp500, by = "Date")
+
+multi_u_cor  <- multi_u%>% 
+  select(ch1y, oil, us3m, SP, SH)
+
+res <- cor(multi_u_cor)
+round(res, 2)
+
+corrplot(res, type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45)
+ 
+
+```
+
+
+#Konklusjon 
+
+Ut fra dataen tyder det på at det amrikanske markedet er tetter knyttet opp mot bitcoin. USA er også verdens største øknomi og USAs BNP er 40% større en Kinas. Da er det kanskje ikke så unaturlig at utvillingen i det amerikanske markede påvirker Bitcoin mer enn Kinas.     
+
 
 ##Svakheter/utfordringer
+
+Utfordringen i vår analyse er tidshorisont. Datasette til bitcoin strekker seg tilbake til 2012, fordi det var da det startet å bli handlet  
+
+
+
