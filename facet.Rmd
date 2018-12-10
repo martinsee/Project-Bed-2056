@@ -22,7 +22,7 @@ library(corrplot)
 Hva vi ønsker å gjøre, hvordan, hvilke data, innhentingsmetoder, utvikling i oppgaven underveis.
 
 
-Vi ønsker å undersøke om prisutviklingen på bitcoin er relatert til kursene på verdens aksjemarkeder. Vi har hentet daglig data for bitcoin i USD (BTC/USD) og s&p500 så langt bak i tid som mulig. Siden BTC kan kjøpes og selges hele uka, også i helgene, mens børsnoterte aksjer kun handles mandag-fredag.Stolpediagrammet nedenfor viser gjennomsnitts- og median-pris for bitcoin fordelt på de ulike ukedagene. Ettersom forskjellene er minimale har vi valgt å fjerne observasjoner lørdager og søndager slik at vi kan "matche" datasettene. I en større oppgave vil det være nødvendig å foreta en hypotesetest om prisen for bitcoin i helgene er signifikant forskjellig fra ukedagene. En alternativ løsning kunne vært å omgjøre prisene og aksjekursene til ukentlig data.
+Vi ønsker å undersøke om prisutviklingen på bitcoin er relatert til kursene på verdens aksjemarkeder. Vi har hentet daglig data for bitcoin i USD (BTC/USD) og s&p500 så langt bak i tid som mulig. Siden BTC kan kjøpes og selges hele uka, også i helgene, mens børsnoterte aksjer kun handles mandag-fredag.Stolpediagrammet nedenfor viser gjennomsnitts- og median-pris for bitcoin fordelt på de ulike ukedagene. I tillegg har vi foretatt en t-test for å sjekke om forskjellene i gjennomsnit for ukedager og helger er statistisk signifikante. 
 
 Vi har valgt den amerikanske indeksen S&P 500 og den kinesiske indeksen Shanghai Composite. Videre forklaring
 
@@ -56,27 +56,48 @@ btc <- btc %>%
   filter(BTC>0)
 ```
 
-Ved et kall på summary() av dataen ser vi at minimumsprisen på bitcoin er 0. Ved filtrering for 0 viser det seg at datasettet har prisen 0 fire sammenhengende dager. Vi mener at verdien 0 ikke kan stemme og at dataen dermed er manglende. Datasettet filtreres slik at alle verdier er høyere enn 0. 
+Grafen viser det ikke, men ved et kall på summary() av dataen ser vi at minimumsprisen på bitcoin er 0. Det viser det seg at datasettet har prisen 0 fire sammenhengende dager i august 2016. Vi mener at verdien 0 representerer at dataen er manglende. Datasettet filtreres slik at alle verdier er høyere enn 0. 
 
 ```{r}
-day_stats <- btc %>%
-  group_by(day = weekdays(Date)) %>%
-  summarise(mean = mean(BTC), median = median(BTC))
+
+uked <- c("mandag", "tirsdag", "onsdag", "torsdag", "fredag")
+helg <- c("lørdag", "søndag")
+
+btc_days <- btc %>%
+  mutate(day = weekdays(Date)) %>%
+  mutate(type = case_when(
+    day %in% uked ~ "ukedag",
+    day %in% helg ~ "helg"
+  ))
+
+btc_days$type <- factor(btc_days$type)
+
+day_stats <- btc_days %>% 
+  group_by(day) %>%
+  summarise(mean = mean(BTC), median = median(BTC)) %>%
+  gather(key = stat, value = value, -day)
 
 day_stats$day <- factor(day_stats$day, levels = c("mandag", "tirsdag", "onsdag", "torsdag",  "fredag", "lørdag", "søndag")) #nødvendig å spesifisere levels for å hindre alfabetisk rekkefølge.
-
-day_stats
-
-day_stats <- day_stats %>%
-  gather(key = stat, value = value, -day)
   
   ggplot(day_stats, aes(x=day, y=value, fill = stat)) +
   geom_bar(stat = "identity", position = "dodge")
 
-  
+t.test(BTC~type, data = btc_days, var.equal = TRUE)
+
+```
+
+
+Stolpediagrammet viser at forskjellene er minimale, men for sikkerhets skyld foretar vi en t-test for å teste om gjenomsnittene for ukedager og helg er signifikant forskjellig. 
+Nullhypotese: Ingen forskjell i gjennomsnitt for ukedager og helger. 
+Forutsetter lik varians.
+
+p-verdien fra testen er 0.97, noe som er svært høyt. Forskjellene er dermed ikke signifikante, uansett hvilket signifikansnivå vi velger.
+Ettersom forskjellene ikke er signifikante har vi valgt å fjerne observasjoner lørdager og søndager slik at vi kan "matche" datasettet til aksjeindeksene. En alternativ løsning kunne vært å omgjøre prisene og aksjekursene til ukentlig data.
+
+
+```{r}
 ### s&p 500
-  
-  
+
 sp500 <- read_csv("data/^GSPC.csv")
 
 sp500 <- sp500 %>%  
@@ -85,8 +106,11 @@ sp500 <- sp500 %>%
 
 summary(sp500)
 
+ggplot(sp500, aes(x=Date, y=SP)) +
+  geom_line(col = "darkgreen") +
+  labs(y = "S&P 500")
 
-###shanghai
+### shanghai
 
 shanghai <- read_csv("data/Shanghai Composite Historical Data.csv", 
             col_types = cols(Date = col_date(format = "%b %d, %Y"), 
@@ -98,6 +122,10 @@ shanghai <- shanghai %>%
 
 summary(shanghai)
 
+ggplot(shanghai, aes(x=Date, y=SH)) +
+  geom_line(col = "purple") +
+  labs(y = "Shanghai Composite")
+
 ukedager <- btc %>%
   inner_join(sp500, by = "Date") %>%
   inner_join(shanghai, by = "Date")
@@ -107,9 +135,9 @@ ukedager_long <- ukedager %>%
 
 head(ukedager_long)
 tail(ukedager_long)
-
 ```
 
+Summary() av datasettene for aksjeindeksene viser ingen manglende verdier eller nullverdier. Dataen inner_joines på dato som er felles for alle datasett. Inner_join matcher bare dato hvor alle datasettene har verdier. I tillegg omgjør vi datasettet fra "wide" til "long". Hver dato har nå to observasjoner av BTC matchet med hver av indeksene i kolonnen "index". Dataen strekker seg fra februar 2012 til november 2018. 
 
 ##S&P 500 vs BTC og og Shanghai Composite vs BTC
 
