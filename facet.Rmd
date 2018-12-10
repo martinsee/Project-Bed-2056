@@ -15,6 +15,7 @@ library(lubridate)
 library(tidyquant)
 library(mosaic)
 library(tsibble)
+library(corrplot)
 ```
 
 ## Vårt prosjekt: Bitcoin og aksjemarkeder
@@ -111,7 +112,7 @@ ggplot(ukedager_long, aes(x=BTC, y=verdi)) +
 
 For S&P 500: Vi ser at variablene er relaterte, men at forholdet ikke er lineært. En lineær modell vil derfor ikke passe for tidsintervallet. S&P 500 mot log(BTC) gir en mye bedre fit. Vi kan lage en lineær modell for S&P som utrykk av logaritmeverdiene av bitcoin. I enkelte ggplot-grafer er en svært lav alpha benyttet for å vise den ekstreme overplottingen i nedre venstre hjørne.  
 
-For Shanghai Composite: Ser vi at variablene ikke er relatert, bort sett fra en periode midtveis. Hvor det ser ut til å være en korrelasjon, dette er sannsynligvis er en periode i 2014 hvor begge to gikk mye opp samtidig.   
+For Shanghai Composite: Ser vi at variablene ikke er relatert. Midtveis i dataen er det en periode hvor de ser ut til å utvikle seg i samme rettning, dette er sannsynligvis er en periode i 2014 hvor begge to gikk mye opp samtidig. Dataen ser ikke ut til å passe til en linær modell da den er veldig sprett og ser ikke til å følge et spesiel korrelering.     
 
 
 
