@@ -325,15 +325,29 @@ multi_u <- china_1y %>%
 multi_u_cor  <- multi_u%>% 
   select(ch1y, oil, us3m, SP, SH)
 
-res <- cor(multi_u_cor)
+res2 <- cor(multi_u_cor)
 round(res, 2)
 
-corrplot(res, type = "upper", order = "hclust", 
+corrplot(res2, type = "upper", order = "hclust", 
          tl.col = "black", tl.srt = 45)
  
 
 ```
 
+Vi ser her at korrelasjonene er mye svakere når tidshorisonten øker. Vi ønsker dermed å se på differansen i korrelasjon når vi har forskjellige lenge på dataen ved å lage en differanse korrelasjon matrix.  
+
+```{r}
+
+
+res3 <- res[c(1, 2, 3, 5, 6), c(1, 2, 3, 5, 6)]
+
+
+res4 <- res3 - res2
+
+res4
+```
+
+Her ser vi en  korrelasjon differanse matrix når vi analyserer korrelasjoner i tidsperiodene 2012-2018 og 2002-2018. Differanse matrixen kunne dessverre ikke vises grafisk siden enkelte differanser i korrelasjon var større enn 1  eller -1 og korrelasjoner kan kun utrykkes innenfor det intervallet. 
 
 #Konklusjon 
 
@@ -342,7 +356,7 @@ Ut fra dataen tyder det på at det amrikanske markedet er tetter knyttet opp mot 
 
 ##Svakheter/utfordringer
 
-Utfordringen i vår analyse er tidshorisont. Datasette til bitcoin strekker seg tilbake til 2012, fordi det var da det startet å bli handlet  
+Utfordringen i vår analyse er tidshorisont. Datasette til bitcoin strekker seg tilbake til 2012, fordi det var da det startet å bli handlet.   
 
 
 
