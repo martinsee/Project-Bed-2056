@@ -22,9 +22,9 @@ library(corrplot)
 Hva vi ønsker å gjøre, hvordan, hvilke data, innhentingsmetoder, utvikling i oppgaven underveis.
 
 
-Vi ønsker å undersøke om prisutviklingen på bitcoin er relatert til kursene på verdens aksjemarkeder. Vi har hentet daglig data for bitcoin i USD (BTC/USD) og s&p500 så langt bak i tid som mulig. BTC kan kjøpes og selges hele uka, også i helgene, mens børsnoterte aksjer kun handles mandag-fredag måtte viudere om vi kunne kutte ut helge dataen. Stolpediagrammet nedenfor viser gjennomsnitts- og median-pris for bitcoin fordelt på de ulike ukedagene. Ettersom forskjellene er minimale har vi valgt å fjerne observasjoner lørdager og søndager slik at vi kan "matche" datasettene. I en større oppgave vil det være nødvendig å foreta en hypotesetest om prisen for bitcoin i helgene er signifikant forskjellig fra ukedagene. En alternativ løsning kunne vært å omgjøre prisene og aksjekursene til ukentlig data.
+Vi ønsker å undersøke om prisutviklingen på bitcoin er relatert til kursene på verdens aksjemarkeder. Vi har hentet daglig data for bitcoin i USD (BTC/USD) og s&p500 så langt bak i tid som mulig. BTC kan kjøpes og selges hele uka, også i helgene, mens børsnoterte aksjer kun handles mandag-fredag måtte vi vurdere om vi kunne kutte ut helge dataen. Stolpediagrammet nedenfor viser gjennomsnitts- og median-pris for bitcoin fordelt på de ulike ukedagene. Ettersom forskjellene er minimale har vi valgt å fjerne observasjoner lørdager og søndager slik at vi kan "matche" datasettene. I en større oppgave vil det være nødvendig å foreta en hypotesetest om prisen for bitcoin i helgene er signifikant forskjellig fra ukedagene. En alternativ løsning kunne vært å omgjøre prisene og aksjekursene til ukentlig data.
 
-Vi har valgt den amerikanske indeksen S&P 500 og den kinesiske indeksen Shanghai Composite. Disse er vide indekser som favner om mange bransjer og dermed kan vi diversifisere bort noe usystematisk risiko som ville gitt bransjemssig støy på dataen. 
+Vi har valgt den amerikanske indeksen S&P 500 og den kinesiske indeksen Shanghai Composite. Disse er vide indekser som favner om mange bransjer, vi diversifiserer dermed bort noe usystematisk risiko som ville gitt bransjemessig støy på dataen. 
 
 I vår analyse ønsker vi også å inludere viktige innsatsfaktorer i øknomien, og vi har dermed inkludert olje prisen (WTI) og kapital representert med statobligasjonrentene på de obligasjonene med kortest løpetid, USA 3 month treasury bonds og Kinesiske 1 Year bonds. Disse to rente blir brukt som mål på renten for risikofri kapital i sine respektive marked. Endringe i risikofri rente er viktig for finansmarkedne fordi det inngår i kalkulasjon av avkasningkravet WACC. Hvis renten går opp må avkastningskravet også gå opp.   
 
@@ -169,7 +169,9 @@ Hva sier regresjonsmodellen?
 R-squared er 0.89. 89% av variasjon i S&P 500 kan forklares av variasjon i log(BTC). For lineære modeller med kun en uavhengig variabel er verdien lik korrelasjonskoeffesienten opphøyet i 2. 
 
 For Shanghai:
-Forholdet er ikke like tydelig. En stor mengde observasjoner viser til store endringer i den kinesiske indeksen for de samme verdiene av log(BTC). Observasjonene svekker forholdet for den resterende dataen som følger trenden. 
+Forholdet er ikke like tydelig. En stor mengde observasjoner viser til store endringer i den kinesiske indeksen for de samme verdiene av log(BTC). Observasjonene svekker forholdet for den resterende dataen som følger trenden. I funksjon summary ser vi at  Multiple R^2: er 0.182 det betyr at modellen har en veldig svak positiv korrelasjon, siden korrelasjon er er oppgitt fra 0 til 1 og beløpet er nært null. 
+
+
 
 Vi er interessert i å se hvordan forholdet og korrelasjonen mellom indeksene og log av BTC har utviklet seg over tid. 
 
@@ -322,11 +324,15 @@ multifit.sh <- lm(formula = SH ~ oil + ch1y + log(BTC), data = multi)
 summary(multifit.sh)
 ```
 
-Hva viser modellen? Endring fra enkel regresjonsmodell (kun BTC)? (Finner ikke den enkle)
+Hva viser modellen? Endring fra enkel regresjonsmodell (kun BTC)? Slette linje???? 
 
 Multiple R-squared er mye lavere for det kinesiske markede (0.5979) enn for det amerikanske (0.9438). Detter er sannaynligvis tilfelledigheter siden det kinesiske markedet har hatt negativ utvikling etter 2015 mens det amerikanske og bitcoin har hatt en sammenfallende positiv utviling hvis man ser på perioden under et. 
 
-Svakheten i dataen skal vi illustrere videre i oppgaven ved å analysere samme data, men over ulike tidshoisonter. Bitcoin dataen er over en relativ kort tidshorisont, og hele perioden sammenfaller med bullmarket i USA etter finanaskrisen, det kan gjøre at dataen får en urelatert positiv korrelasjon.   
+
+
+##Dataen reliabilitet 
+
+Svakheten i dataen skal vi illustrere videre i oppgaven ved å analysere samme data, men over ulike tidshoisonter. Bitcoin dataen er over en relativ kort tidshorisont 2012-2018, og hele perioden sammenfaller med bullmarket i USA etter finanaskrisen, det kan gjøre at dataen kan får en urelatert positiv korrelasjon.   
 
 
 ```{r}
@@ -339,7 +345,9 @@ round(res, 2)
 corrplot(res, type = "upper", order = "hclust", 
          tl.col = "black", tl.srt = 45)
 ```
-Her ser vi en korrelasjons matrix på viktige faktorer i finansmarkedene i USA og Kina. Vi har valgt å tatt med USA 3 month treassury bonds, og Kinesiske 1 year bonds. Disse blir ansett for å være benchmarken rente for risikofri kapital, og er dermed viktig i verdsettingen av eiendeler.  
+
+
+Her ser vi en korrelasjons matrix med finansmarkedene i USA og Kina og viktige innsatsfaktorer i markedne. 
 
 Her ser vi oljeprisen negative utvikling på finansmarkedene. Det skjer ved at en økning i pris på en viktig innsatsfaktor (olje) prises inn markede ved å redusere akjskurser siden økt oljepris redusert fri egenkapital hos bedrifter.  
 
