@@ -18,13 +18,13 @@ library(corrplot)
 
 ## Vårt prosjekt: Bitcoin og aksjemarkeder
 
-###Introduksjon
+###Introduksjon 
 Hva vi ønsker å gjøre, hvordan, hvilke data, innhentingsmetoder, utvikling i oppgaven underveis.
 
 
 Vi ønsker å undersøke om prisutviklingen på bitcoin er relatert til kursene på verdens aksjemarkeder. Vi har hentet daglig data for bitcoin i USD (BTC/USD) og s&p500 så langt bak i tid som mulig. Siden BTC kan kjøpes og selges hele uka, også i helgene, mens børsnoterte aksjer kun handles mandag-fredag.Stolpediagrammet nedenfor viser gjennomsnitts- og median-pris for bitcoin fordelt på de ulike ukedagene. I tillegg har vi foretatt en t-test for å sjekke om forskjellene i gjennomsnit for ukedager og helger er statistisk signifikante. 
 
-Vi har valgt den amerikanske indeksen S&P 500 og den kinesiske indeksen Shanghai Composite. Videre forklaring
+Vi har valgt den amerikanske indeksen S&P 500 og den kinesiske indeksen Shanghai Composite. Videre forklaring hva indeksene er.
 
 Dra inn flere prediktorvariabler som olje og statsobligasjonsrenter for å gjennomføre en multippel regresjonsanalyse på aksjeindeksene. 
 
