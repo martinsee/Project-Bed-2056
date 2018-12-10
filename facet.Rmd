@@ -1,6 +1,6 @@
 ---
 title: "facet"
-author: "Martin S. Bjørnerem"
+author: "Martin S. Bjørnerem (X) og Chris A. Stokvik (1) "
 date: "9 desember 2018"
 output: html_document
 ---
@@ -19,16 +19,16 @@ library(corrplot)
 ## Vårt prosjekt: Bitcoin og aksjemarkeder
 
 ###Introduksjon
-Hva vi ønsker å gjøre, hvordan, hvilke data, innhentingsmetoder, utvikling i oppgaven underveis.
+Hva vi ønsker å gjøre, hvordan, hvilke data, innhentingsmetoder, utvikling i oppgaven underveis. Slettelinje?? 
 
 
 Vi ønsker å undersøke om prisutviklingen på bitcoin er relatert til kursene på verdens aksjemarkeder. Vi har hentet daglig data for bitcoin i USD (BTC/USD) og s&p500 så langt bak i tid som mulig. BTC kan kjøpes og selges hele uka, også i helgene, mens børsnoterte aksjer kun handles mandag-fredag måtte vi vurdere om vi kunne kutte ut helge dataen. Stolpediagrammet nedenfor viser gjennomsnitts- og median-pris for bitcoin fordelt på de ulike ukedagene. Ettersom forskjellene er minimale har vi valgt å fjerne observasjoner lørdager og søndager slik at vi kan "matche" datasettene. I en større oppgave vil det være nødvendig å foreta en hypotesetest om prisen for bitcoin i helgene er signifikant forskjellig fra ukedagene. En alternativ løsning kunne vært å omgjøre prisene og aksjekursene til ukentlig data.
 
 Vi har valgt den amerikanske indeksen S&P 500 og den kinesiske indeksen Shanghai Composite. Disse er vide indekser som favner om mange bransjer, vi diversifiserer dermed bort noe usystematisk risiko som ville gitt bransjemessig støy på dataen. 
 
-I vår analyse ønsker vi også å inludere viktige innsatsfaktorer i øknomien, og vi har dermed inkludert olje prisen (WTI) og kapital representert med statobligasjonrentene på de obligasjonene med kortest løpetid, USA 3 month treasury bonds og Kinesiske 1 Year bonds. Disse to rente blir brukt som mål på renten for risikofri kapital i sine respektive marked. Endringe i risikofri rente er viktig for finansmarkedne fordi det inngår i kalkulasjon av avkasningkravet WACC. Hvis renten går opp må avkastningskravet også gå opp.   
+I vår analyse ønsker vi også å inludere viktige innsatsfaktorer i øknomien, og vi har dermed inkludert olje prisen (WTI) og kapital representert med statobligasjonrentene på de obligasjonene med kortest løpetid, USA 3 month treasury bonds og Kinesiske 1 Year bonds. Disse to rente blir brukt som mål på renten for risikofri kapital i sine respektive marked. Endringe i risikofri rente er viktig for finansmarkedne fordi det inngår i kalkulasjon av avkasningkravet WACC. Hvis renten går opp må avkastningskravet også gå opp. (Langli 2016)   
 
-Dra inn flere prediktorvariabler som olje og statsobligasjonsrenter for å gjennomføre en multippel regresjonsanalyse på aksjeindeksene. 
+Dra inn flere prediktorvariabler som olje og statsobligasjonsrenter for å gjennomføre en multippel regresjonsanalyse på aksjeindeksene. SL??? 
 
 ### Første blikk/intrykk av bitcoin data
 
@@ -75,8 +75,9 @@ day_stats <- day_stats %>%
   ggplot(day_stats, aes(x=day, y=value, fill = stat)) +
   geom_bar(stat = "identity", position = "dodge")
 
-  
-### s&p 500
+### laster inn data fra data mappen, så velger kolonnene vi skal bruke med select, og endrer kolonne navn med rename slik at det er lett å forså ### hvilken kolonne som tilfører hvilken verdi når vi laget et felles datasett. 
+    
+### s&p 500 - laster inn data, velger kollnnene v
   
   
 sp500 <- read_csv("data/^GSPC.csv")
@@ -100,9 +101,13 @@ shanghai <- shanghai %>%
 
 summary(shanghai)
 
+# Slår sammen datatsettene med hensyn på dato 
+
 ukedager <- btc %>%
   inner_join(sp500, by = "Date") %>%
   inner_join(shanghai, by = "Date")
+
+# Endrer datsette til long slik at det er klart for å visualiseres 
 
 ukedager_long <- ukedager %>%
   gather(key = index, value = value, -Date, -BTC)
@@ -116,6 +121,8 @@ tail(ukedager_long)
 ##S&P 500 vs BTC og og Shanghai Composite vs BTC
 
 ```{r first look, fig.height=10, fig.width= 15}
+
+# Visualiserer dataen med ggplot, med bitcoin på x aksen og verdien til indeksene på y aksen. Bruker facet_wrap for å lage plot ved siden av hverandre slik at det er lett å sammenligne. 
 
 ggplot(ukedager_long, aes(x=BTC, y=value)) +
   geom_point() +
@@ -252,10 +259,9 @@ ggplot(data = rolling_cor) + geom_line(aes(x = Date, y = cor_200)) +
 For Kina:
 Den kinesiske glidene korrelasjon skille seg fra den Amerikanske ved at den er mye mer negativ. Dette må nok ses i sammenheng med utviklingen i markede. I 2015 ser vi i at korrelasjon er på nesten -1.  Det er på samme tidspunkt som Shanghai børsen når sin all time high og Bitcoin er på sin bunn etter at 2014 bobblen sprakk.  
 
-Hvordan er den kinesiske glidende korrelasjon?
-Stemmer den intuitivt med fargelinjene?
-Hvilken situasjon forklarer topp og bunn?
-
+Hvordan er den kinesiske glidende korrelasjon?  SL? 
+Stemmer den intuitivt med fargelinjene? SL? 
+Hvilken situasjon forklarer topp og bunn? SL? 
 
 Den gjennomsnittlige korrelasjonen er høyere enn gjennomsnittet av den 200-dagers glidende korrelasjonen. Dette gjelder både for den amerikanske og kinesiske indeksen.
 
@@ -263,6 +269,8 @@ Den gjennomsnittlige korrelasjonen er høyere enn gjennomsnittet av den 200-dager
 ##Multippel regresjonsmodell:
 
 ```{r multiple data}
+
+### Vi lastere inn flere datasett, endrer kolonne til dato. Så reduserer vi dasette ved å selektere de kolonnene vi trenger og endrer navn, begge handlingene gjør vi gjennom tidyverse sin pipe funksjon slik at det blir mer konsist og letter å forså koden. 
 
 ### Oil wti 
 
@@ -324,13 +332,13 @@ multifit.sh <- lm(formula = SH ~ oil + ch1y + log(BTC), data = multi)
 summary(multifit.sh)
 ```
 
-Hva viser modellen? Endring fra enkel regresjonsmodell (kun BTC)? Slette linje???? 
+Hva viser modellen? Endring fra enkel regresjonsmodell (kun BTC)? SL?
 
 Multiple R-squared er mye lavere for det kinesiske markede (0.5979) enn for det amerikanske (0.9438). Detter er sannaynligvis tilfelledigheter siden det kinesiske markedet har hatt negativ utvikling etter 2015 mens det amerikanske og bitcoin har hatt en sammenfallende positiv utviling hvis man ser på perioden under et. 
 
 
 
-##Dataen reliabilitet 
+##Dataens reliabilitet 
 
 Svakheten i dataen skal vi illustrere videre i oppgaven ved å analysere samme data, men over ulike tidshoisonter. Bitcoin dataen er over en relativ kort tidshorisont 2012-2018, og hele perioden sammenfaller med bullmarket i USA etter finanaskrisen, det kan gjøre at dataen kan får en urelatert positiv korrelasjon.   
 
@@ -347,11 +355,15 @@ corrplot(res, type = "upper", order = "hclust",
 ```
 
 
-Her ser vi en korrelasjons matrix med finansmarkedene i USA og Kina og viktige innsatsfaktorer i markedne. 
+Her ser vi en korrelasjons matrix med finansmarkedene i USA og Kina og viktige innsatsfaktorer i markedene. 
 
-Her ser vi oljeprisen negative utvikling på finansmarkedene. Det skjer ved at en økning i pris på en viktig innsatsfaktor (olje) prises inn markede ved å redusere akjskurser siden økt oljepris redusert fri egenkapital hos bedrifter.  
+Vi ser at oljeprisen har negative korrelasjon på finansmarkedene både i USA og Kina. Det skjer ved at en økning i pris på en viktig innsatsfaktor (olje) prises inn markede ved å redusere akjskurser siden økt oljepris redusert fri egenkapital hos bedrifter, siden det øker kostnadne. Aksjer representerer verdien til selskapet etter at sikkret gjeld er betalt. Derfor er fri egenkapital viktig fordi det øker selskapenes muligheter til å øke egenkapitalen eller utbetale utbytte. (Langli, 2016)
+
+For å vurdere om disse dataen er reliable har vi tatt ut bitcoin slik at vi kan øke tidshorisonten vår fra 2012-2018 til 2001-2018 
 
 ```{r}
+
+# Her lager vi et nytt datasett men uten bitcoin 
 
 multi_u <- china_1y %>%
   inner_join(oilwti, by = "Date") %>%
@@ -371,7 +383,7 @@ corrplot(res2, type = "upper", order = "hclust",
 
 ```
 
-Vi ser her at korrelasjonene er mye svakere når tidshorisonten øker. Vi ønsker dermed å se på differansen i korrelasjon når vi har forskjellige lenge på dataen ved å lage en differanse korrelasjon matrix.  
+Vi ser her at korrelasjonene er mye svakere når tidshorisonten øker.  Differansen i korrelasjon mellom dataen har vi samlet i en differanse korrelasjon matrix.  
 
 ```{r}
 
@@ -382,7 +394,7 @@ res4 <- res3 - res2
 res4
 ```
 
-Her ser vi en  korrelasjon differanse matrix når vi analyserer korrelasjoner i tidsperiodene 2012-2018 og 2002-2018. Differanse matrixen kunne dessverre ikke vises grafisk siden enkelte differanser i korrelasjon var større enn 1  eller -1 og korrelasjoner kan kun utrykkes innenfor det intervallet. 
+Her ser vi korrelasjon differanse matrix når vi analyserer korrelasjoner i tidsperiodene 2012-2018 og 2001-2018. Differanse matrixen kunne dessverre ikke vises grafisk siden enkelte differanser i korrelasjon var større enn 1  eller -1 og korrelasjoner kan kun utrykkes innenfor det intervallet. 
 
 #Konklusjon 
 
@@ -391,7 +403,7 @@ Ut fra dataen tyder det på at det amrikanske markedet er tetter knyttet opp mot 
 
 ##Svakheter/utfordringer
 
-Utfordringen i vår analyse er tidshorisont. Datasette til bitcoin strekker seg tilbake til 2012, fordi det var da bitcoin startet å bli handlet  i organiserte marked.   
+Utfordringen i vår analyse er tidshorisont. Datasette til bitcoin strekker seg tilbake til 2012, fordi det var da bitcoin startet å bli handlet i organiserte marked.   
 
 Sterk korrelasjon er ikke en indikator på årsakssammenhen eller kausalitet.
 
@@ -399,25 +411,31 @@ Sterk korrelasjon er ikke en indikator på årsakssammenhen eller kausalitet.
 
 ###Kilder:
 
-Data hentet fra investing.com:
+Langli J. (2016) Årsregnskapet 10. utg, ISBN/EAN: 9788205494510 Gyldendal Oslo  
+
 
 - BTC/USD
-https://www.bitfinex.com/stats 
-
-Krever bruker for å laste ned data 
-
+https://www.bitfinex.com/stats  (Krever bruker for å laste ned data)
 
 - S&P 500
 
+https://www.investing.com/indices/us-spx-500-historical-data
+
 - Oil West texas intermidate 
+
+https://www.investing.com/commodities/crude-oil-historical-data
 
 -Shanghai Composite 
 
+https://www.investing.com/indices/shanghai-composite-historical-data
+
 -USA 3 month treasury bonds 
 
-Kina 1 year treasury bond
+https://www.investing.com/rates-bonds/u.s.-3-month-bond-yield
 
+-Kina 1 year treasury bond
 
+https://www.investing.com/rates-bonds/china-1-year-bond-yield-historical-data
 
 
 
