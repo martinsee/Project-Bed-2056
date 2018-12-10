@@ -111,7 +111,7 @@ ggplot(ukedager_long, aes(x=BTC, y=verdi)) +
 
 For S&P 500: Vi ser at variablene er relaterte, men at forholdet ikke er lineært. En lineær modell vil derfor ikke passe for tidsintervallet. S&P 500 mot log(BTC) gir en mye bedre fit. Vi kan lage en lineær modell for S&P som utrykk av logaritmeverdiene av bitcoin. I enkelte ggplot-grafer er en svært lav alpha benyttet for å vise den ekstreme overplottingen i nedre venstre hjørne.  
 
-For Shanghai Composite:
+For Shanghai Composite: Ser vi at variablene ikke er relatert, bort sett fra en periode midtveis. Hvor det ser ut til å være en korrelasjon, dette er sannsynligvis er en periode i 2014 hvor begge to gikk mye opp samtidig.   
 
 
 
@@ -167,7 +167,8 @@ Legger til farge for ulike år for å vise utvikling i korrelasjon over tid.
 For USA:
 I den andre grafen har hvert år fått en regresjonslinje fra egen lineær modell. Fra grafen ser vi at regresjonslinjene har negativt stigningstall i to årstall, 2014 og 2018. Begge de to årene opplevde bitcoin at "bobla sprakk", uten at børsindeksene falt. 
 
-For Kina:
+For Kina: 
+Vi ser at spredningen i data og avstanden fra regresjnslinjen tyder på veldig stor volatilitet, noe som stemmer overrens med virkeligheten. Shanghai børsen nådde klimax i 2015 og har siden synket over 50%  
 
 
 
@@ -218,7 +219,7 @@ ggplot(data = rolling_cor) + geom_line(aes(x = Date, y = cor_200)) +
   geom_hline(yintercept=mean.cor.c, linetype="dashed", color = "red", size=1) +
   geom_hline(yintercept=mean.200.cor.c, linetype="dashed", color = "blue", size=1)
 ```
-
+Den kinesiske glidene korrelasjon skille seg fra den Amerikanske ved at den er mye mer negativ. Dette må nok ses i sammenheng med utviklingen i markede. I 2015 ser vi i at korrelasjon er på nesten -1.  Det er på samme tidspunkt som Shanghai børsen når sin all time high og Bitcoin er på sin bunn etter at 2014 bobblen sprakk.  
 
 Hvordan er den kinesiske glidende korrelasjon?
 Stemmer den intuitivt med fargelinjene?
